@@ -1,0 +1,129 @@
+# Reusable performance workflow for the perf-config shared pipeline.
+#
+# Cross-repo invocation (each consuming site is its own GitHub repo):
+#   uses: OWNER_PLACEHOLDER/perf-config/.github/workflows/perf.yml@v1
+#   with:
+#     site_dir: dist
+#     tier: spa
+#
+# The calling repo's checkout is the workspace root. perf-config's tools
+# and configs are pulled in via a second checkout into ./.perf-config/.
+name: perf
+
+on:
+  workflow_call:
+    inputs:
+      site_dir:
+        description: "Path to the built/dist directory to audit (e.g. dist)."
+        type: string
+        required: true
+      build_cmd:
+        description: "Command used to build the site. Default: yarn build."
+        type: string
+        required: false
+        default: "yarn build"
+      prod_url:
+        description: "Production URL (only used by the weekly cron variant)."
+        type: string
+        required: false
+        default: ""
+      node_version:
+        description: "Node.js version to use."
+        type: string
+        required: false
+        default: "20"
+      package_manager:
+        description: "Package manager: yarn | npm | pnpm."
+        type: string
+        required: false
+        default: "yarn"
+      tier:
+        description: "Budget tier: static | spa | game. Selects perf-budgets profile."
+        type: string
+        required: false
+        default: "spa"
+      perf_config_ref:
+        description: "Git ref of perf-config to use (tag, branch, or sha). Default: v1."
+        type: string
+        required: false
+        default: "v1"
+
+jobs:
+  perf:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Calling repo (the site being audited) — default workspace.
+      - name: Checkout site
+        uses: actions/checkout@v4
+
+      # 2. perf-config — pulled into ./.perf-config/ at the pinned ref.
+      # NOTE: OWNER_PLACEHOLDER must be replaced with the real GitHub owner/org
+      # before this workflow can run. Left explicit so misconfiguration fails
+      # loudly rather than silently checking out the wrong repo.
+      - name: Checkout perf-config
+        uses: actions/checkout@v4
+        with:
+          repository: OWNER_PLACEHOLDER/perf-config
+          path: .perf-config
+          ref: ${{ inputs.perf_config_ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: ${{ inputs.package_manager }}
+
+      # Install dependencies using the site's chosen package manager.
+      - name: Install (yarn)
+        if: inputs.package_manager == 'yarn'
+        run: yarn install --frozen-lockfile
+
+      - name: Install (npm)
+        if: inputs.package_manager == 'npm'
+        run: npm ci
+
+      - name: Install (pnpm)
+        if: inputs.package_manager == 'pnpm'
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      # Build step is skipped for the static tier (pre-built sites).
+      - name: Build
+        if: inputs.tier != 'static'
+        run: ${{ inputs.build_cmd }}
+
+      # Asset guard: enforces filename hashing, gzip presence, no source maps in prod, etc.
+      - name: Asset guard
+        run: bash .perf-config/tools/asset-guard.sh ${{ inputs.site_dir }}
+
+      # size-limit tracks JS/CSS bundle size against per-site .size-limit config.
+      # Skipped for static tier since there's no build step / package script.
+      - name: size-limit
+        if: inputs.tier != 'static'
+        uses: andresz1/size-limit-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          directory: ${{ inputs.site_dir }}
+          build_script: build
+
+      # Per-site Lighthouse override lives at <site_dir>/lighthouserc.json if present;
+      # otherwise we fall back to the shared .perf-config/lighthouserc.json.
+      # We run @lhci/cli directly from the site dir so that `staticDistDir` paths in
+      # the per-site config resolve relative to the site dir (matching local dev runs).
+      - name: Lighthouse CI
+        run: |
+          if [ -f "${{ inputs.site_dir }}/lighthouserc.json" ]; then
+            cd "${{ inputs.site_dir }}"
+            npx --yes @lhci/cli@latest autorun --config=lighthouserc.json
+          else
+            npx --yes @lhci/cli@latest autorun --config=.perf-config/lighthouserc.json
+          fi
+
+      # Best-effort HTML lint. Warn-only until every site has html-validate config.
+      - name: HTML perf-lint (warn)
+        run: npx --yes html-validate "${{ inputs.site_dir }}/**/*.html" || true
+
+      # Best-effort CSS lint. Warn-only until every site has stylelint config.
+      - name: CSS perf-lint (warn)
+        run: npx --yes stylelint "${{ inputs.site_dir }}/**/*.css" || true
