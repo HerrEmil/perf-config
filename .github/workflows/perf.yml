@@ -97,24 +97,27 @@ jobs:
       - name: Asset guard
         run: bash .perf-config/tools/asset-guard.sh ${{ inputs.site_dir }}
 
-      # size-limit tracks JS/CSS bundle size against per-site .size-limit config.
-      # Skipped for static tier since there's no build step / package script.
+      # size-limit tracks JS/CSS bundle size against per-site .size-limit.json.
+      # Run directly via the chosen package manager so locally-installed presets
+      # (e.g. @size-limit/preset-app) are picked up; andresz1/size-limit-action
+      # forces npm, which silently drops yarn-only deps.
       - name: size-limit
         if: inputs.tier != 'static'
-        uses: andresz1/size-limit-action@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          directory: ${{ inputs.site_dir }}
-          build_script: build
+        run: |
+          case "${{ inputs.package_manager }}" in
+            yarn) yarn size-limit ;;
+            npm)  npm exec -- size-limit ;;
+            pnpm) pnpm exec size-limit ;;
+            *)    echo "Unknown package_manager: ${{ inputs.package_manager }}" >&2; exit 1 ;;
+          esac
 
-      # Per-site Lighthouse override lives at <site_dir>/lighthouserc.json if present;
-      # otherwise we fall back to the shared .perf-config/lighthouserc.json.
-      # We run @lhci/cli directly from the site dir so that `staticDistDir` paths in
-      # the per-site config resolve relative to the site dir (matching local dev runs).
+      # Per-site Lighthouse override lives at ./lighthouserc.json (repo root) if
+      # present; otherwise fall back to the shared .perf-config/lighthouserc.json.
+      # The per-site config is responsible for setting `staticDistDir` to the
+      # right relative path.
       - name: Lighthouse CI
         run: |
-          if [ -f "${{ inputs.site_dir }}/lighthouserc.json" ]; then
-            cd "${{ inputs.site_dir }}"
+          if [ -f "lighthouserc.json" ]; then
             npx --yes @lhci/cli@latest autorun --config=lighthouserc.json
           else
             npx --yes @lhci/cli@latest autorun --config=.perf-config/lighthouserc.json
