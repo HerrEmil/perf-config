@@ -159,10 +159,12 @@ jobs:
       # both packages live in the same node_modules tree. `npx -p A -p B` uses
       # separate npx caches and breaks that resolution, so we install both into
       # a tmp dir and invoke the binary directly.
+      # `--allow-empty-input` prevents stylelint's NoFilesFoundError on sites
+      # that have no CSS files (e.g. all CSS inlined). Real lint errors still fail.
       - name: CSS perf-lint
         run: |
           if ls .stylelintrc .stylelintrc.json .stylelintrc.js .stylelintrc.cjs .stylelintrc.mjs .stylelintrc.yaml .stylelintrc.yml stylelint.config.js stylelint.config.cjs stylelint.config.mjs 2>/dev/null | grep -q .; then
-            npx --yes stylelint "${{ inputs.site_dir }}/**/*.css"
+            npx --yes stylelint --allow-empty-input "${{ inputs.site_dir }}/**/*.css"
           else
             # `--config-basedir` tells stylelint where to resolve `extends`
             # from — must point at the tree where stylelint-config-standard is
@@ -173,5 +175,6 @@ jobs:
             /tmp/stylelint-runner/node_modules/.bin/stylelint \
               --config="$(pwd)/.perf-config/.stylelintrc.json" \
               --config-basedir=/tmp/stylelint-runner \
+              --allow-empty-input \
               "${{ inputs.site_dir }}/**/*.css"
           fi
