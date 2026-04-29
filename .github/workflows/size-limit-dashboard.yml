@@ -82,13 +82,15 @@ jobs:
         if: steps.detect.outputs.present == 'true'
         id: sl
         working-directory: site
+        # `--silent` suppresses package-manager preamble that would otherwise
+        # contaminate stdout and break downstream jq parsing. size-limit exits
+        # non-zero when a limit is violated — we want the JSON either way, so
+        # the command is wrapped to ignore the exit code.
         run: |
-          # `--silent` suppresses package-manager preamble that would otherwise
-          # contaminate stdout and break downstream jq parsing.
           case "${{ matrix.site.pkg }}" in
-            yarn) yarn --silent size-limit --json > /tmp/sl.json ;;
-            npm)  npm exec --silent -- size-limit --json > /tmp/sl.json ;;
-            pnpm) pnpm --silent exec size-limit --json > /tmp/sl.json ;;
+            yarn) yarn --silent size-limit --json > /tmp/sl.json || true ;;
+            npm)  npm exec --silent -- size-limit --json > /tmp/sl.json || true ;;
+            pnpm) pnpm --silent exec size-limit --json > /tmp/sl.json || true ;;
           esac
           cat /tmp/sl.json
 
