@@ -31,14 +31,24 @@ jobs:
           - { key: chess,             repo: "HerrEmil/Chess",             pkg: "yarn", build: "yarn build",  has_size: true  }
     steps:
       - name: Checkout site (${{ matrix.site.key }})
+        id: checkout
         uses: actions/checkout@v4
         with:
           repository: ${{ matrix.site.repo }}
           path: site
+          # PAT enables checkout of private herremil/* repos. Optional — public
+          # repos work with the default token; private ones are skipped if absent.
+          token: ${{ secrets.HERREMIL_ISSUE_TOKEN || secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
       - name: Detect size-limit config
         id: detect
         run: |
+          if [ "${{ steps.checkout.outcome }}" != "success" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice ::${{ matrix.site.key }} checkout failed (likely private repo + no PAT) — skipping"
+            exit 0
+          fi
           if [ -f site/.size-limit.json ] || [ -f site/.size-limit.js ] || \
              [ -f site/.size-limit.cjs ] || jq -e '.["size-limit"]' site/package.json >/dev/null 2>&1; then
             echo "present=true" >> "$GITHUB_OUTPUT"
@@ -52,8 +62,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: ${{ matrix.site.pkg }}
-          cache-dependency-path: site/${{ matrix.site.pkg == 'yarn' && 'yarn.lock' || matrix.site.pkg == 'pnpm' && 'pnpm-lock.yaml' || 'package-lock.json' }}
 
       - name: Install (${{ matrix.site.pkg }})
         if: steps.detect.outputs.present == 'true'
