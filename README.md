@@ -100,10 +100,18 @@ Edit `perf-budgets.json` (or tier variant), commit, retag `v1` → all sites pin
 - Asset-guard fails on: `.DS_Store`, `.otf`/`.ttf`/`.eot`/`.woff`, `.tiff`/`.gif`/`.bmp`, images > 200 KB
 - Asset-guard warns on: images > 100 KB, woff2 > 35 KB, missing content-hash, stray sourceMappingURL
 
+## Monitoring crons
+
+| Workflow | Cron | What it does |
+|---|---|---|
+| `lhci-weekly.yml` | Mon 06:00 UTC | Strict LHCI (perf >= 0.98, LCP <= 1500ms) against each prod URL. Opens regression issue after **2 consecutive** failures. State on `lhci-state` orphan branch. |
+| `size-limit-dashboard.yml` | Mon 07:00 UTC | Builds each site, runs `size-limit --json`, appends to `size-limit-history`, renders sparkline dashboard to `gh-pages` (https://herremil.github.io/perf-config/). |
+
+Cross-repo issue creation needs a `HERREMIL_ISSUE_TOKEN` repo secret (PAT with `repo` scope). Without it, `lhci-weekly.yml` falls back to opening the issue in `perf-config` itself.
+
 ## Roadmap (deferred)
 
 - web-vitals RUM beacon → CloudFront Function → S3 NDJSON → Athena
-- Weekly LHCI vs prod URL + GitHub-issue regression bot
 - Synthetic TTFB cron for lunch.herremil.com
 - Per-site action items: woff2 conversion, AVIF re-encode, asm.js drop, AWS SDK trim (see ruleset §8)
 

@@ -1,0 +1,178 @@
+# size-limit dashboard — runs `size-limit --json` against each wired site,
+# appends a row to per-site NDJSON history on the `size-limit-history` orphan
+# branch, and renders an HTML dashboard with inline-SVG sparklines to
+# `gh-pages`.
+#
+# View at: https://herremil.github.io/perf-config/
+# Manual run: `gh workflow run size-limit-dashboard.yml -R HerrEmil/perf-config`
+name: size-limit-dashboard
+
+on:
+  schedule:
+    # Mondays 07:00 UTC (one hour after the LHCI cron, so they don't collide).
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # push to size-limit-history + gh-pages
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        site:
+          - { key: cv,                repo: "HerrEmil/cv",                pkg: "yarn", build: "yarn build",  has_size: true  }
+          - { key: herremil-com,      repo: "HerrEmil/HerrEmil.com",      pkg: "yarn", build: "yarn build",  has_size: true  }
+          - { key: gameland,          repo: "HerrEmil/GameLand",          pkg: "yarn", build: "yarn build",  has_size: true  }
+          - { key: legendaryjourney,  repo: "HerrEmil/LegendaryJourney",  pkg: "yarn", build: "yarn build",  has_size: true  }
+          - { key: sandpiper,         repo: "HerrEmil/Sandpiper",         pkg: "yarn", build: "yarn build",  has_size: true  }
+          - { key: chess,             repo: "HerrEmil/Chess",             pkg: "yarn", build: "yarn build",  has_size: true  }
+    steps:
+      - name: Checkout site (${{ matrix.site.key }})
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.site.repo }}
+          path: site
+
+      - name: Detect size-limit config
+        id: detect
+        run: |
+          if [ -f site/.size-limit.json ] || [ -f site/.size-limit.js ] || \
+             [ -f site/.size-limit.cjs ] || jq -e '.["size-limit"]' site/package.json >/dev/null 2>&1; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice ::${{ matrix.site.key }} has no size-limit config — skipping"
+          fi
+
+      - name: Setup Node
+        if: steps.detect.outputs.present == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: ${{ matrix.site.pkg }}
+          cache-dependency-path: site/${{ matrix.site.pkg == 'yarn' && 'yarn.lock' || matrix.site.pkg == 'pnpm' && 'pnpm-lock.yaml' || 'package-lock.json' }}
+
+      - name: Install (${{ matrix.site.pkg }})
+        if: steps.detect.outputs.present == 'true'
+        working-directory: site
+        run: |
+          case "${{ matrix.site.pkg }}" in
+            yarn) yarn install --frozen-lockfile ;;
+            npm)  npm ci ;;
+            pnpm) corepack enable && pnpm install --frozen-lockfile ;;
+          esac
+
+      - name: Build
+        if: steps.detect.outputs.present == 'true'
+        working-directory: site
+        run: ${{ matrix.site.build }}
+
+      - name: Run size-limit
+        if: steps.detect.outputs.present == 'true'
+        id: sl
+        working-directory: site
+        run: |
+          case "${{ matrix.site.pkg }}" in
+            yarn) yarn size-limit --json > /tmp/sl.json ;;
+            npm)  npm exec -- size-limit --json > /tmp/sl.json ;;
+            pnpm) pnpm exec size-limit --json > /tmp/sl.json ;;
+          esac
+          cat /tmp/sl.json
+
+      - name: Upload result
+        if: steps.detect.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sl-${{ matrix.site.key }}
+          path: /tmp/sl.json
+          retention-days: 7
+
+  publish:
+    needs: measure
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout perf-config
+        uses: actions/checkout@v4
+        with:
+          path: perf-config
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Download all results
+        uses: actions/download-artifact@v4
+        with:
+          path: results
+          pattern: sl-*
+
+      - name: Checkout history branch
+        uses: actions/checkout@v4
+        with:
+          ref: size-limit-history
+          path: history
+          fetch-depth: 1
+        continue-on-error: true
+
+      - name: Append history rows
+        run: |
+          set -euo pipefail
+          if [ ! -d history/.git ]; then
+            mkdir -p history && cd history
+            git init -q -b size-limit-history
+            git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+            cd ..
+          fi
+          mkdir -p history/sites
+          ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          for f in results/sl-*/sl.json; do
+            [ -f "$f" ] || continue
+            site=$(basename "$(dirname "$f")" | sed 's/^sl-//')
+            # size-limit --json emits an array of {name, size, sizeLimit, passed, ...}
+            jq -c --arg ts "$ts" '.[] | {ts: $ts, name: .name, size: .size, limit: (.sizeLimit // null), passed: (.passed // null)}' "$f" \
+              >> "history/sites/${site}.ndjson"
+            echo "appended $(jq length "$f") row(s) for $site"
+          done
+
+      - name: Commit history
+        working-directory: history
+        run: |
+          set -euo pipefail
+          git config user.name  "size-limit-bot[bot]"
+          git config user.email "size-limit-bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no new history rows"
+          else
+            git commit -m "size-limit history $(date -u +%Y-%m-%d)"
+            git push origin size-limit-history || git push -u origin HEAD:size-limit-history
+          fi
+
+      - name: Render dashboard
+        run: |
+          mkdir -p dashboard
+          node perf-config/tools/render-size-dashboard.mjs \
+            --history history/sites \
+            --out dashboard
+
+      - name: Publish to gh-pages
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd dashboard
+          touch .nojekyll
+          git init -q -b gh-pages
+          git config user.name  "size-limit-bot[bot]"
+          git config user.email "size-limit-bot@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git"
+          git add -A
+          git commit -q -m "dashboard $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          # Force-push: gh-pages is generated, never PR'd. Each run is a fresh tree.
+          git push -f origin gh-pages
