@@ -123,10 +123,25 @@ jobs:
             npx --yes @lhci/cli@latest autorun --config=.perf-config/lighthouserc.json
           fi
 
-      # Best-effort HTML lint. Warn-only until every site has html-validate config.
-      - name: HTML perf-lint (warn)
-        run: npx --yes html-validate "${{ inputs.site_dir }}/**/*.html" || true
+      # HTML lint. Per-site config wins (`.htmlvalidate.json` / `html-validate.config.*`
+      # at repo root); otherwise the shared `.perf-config/html-validate.config.json` is used.
+      # Errors fail the build — sites can extend the shared config to soften specific rules.
+      - name: HTML perf-lint
+        run: |
+          if ls .htmlvalidate.json html-validate.config.json html-validate.config.js html-validate.config.cjs html-validate.config.mjs 2>/dev/null | grep -q .; then
+            npx --yes html-validate "${{ inputs.site_dir }}/**/*.html"
+          else
+            npx --yes html-validate --config=.perf-config/html-validate.config.json "${{ inputs.site_dir }}/**/*.html"
+          fi
 
-      # Best-effort CSS lint. Warn-only until every site has stylelint config.
-      - name: CSS perf-lint (warn)
-        run: npx --yes stylelint "${{ inputs.site_dir }}/**/*.css" || true
+      # CSS lint. Per-site config wins (`.stylelintrc*` / `stylelint.config.*`);
+      # otherwise the shared `.perf-config/.stylelintrc.json` is used. Sites that need
+      # plugins beyond `stylelint-config-standard` should add a local config and
+      # install plugins as devDependencies.
+      - name: CSS perf-lint
+        run: |
+          if ls .stylelintrc .stylelintrc.json .stylelintrc.js .stylelintrc.cjs .stylelintrc.mjs .stylelintrc.yaml .stylelintrc.yml stylelint.config.js stylelint.config.cjs stylelint.config.mjs 2>/dev/null | grep -q .; then
+            npx --yes stylelint "${{ inputs.site_dir }}/**/*.css"
+          else
+            npx --yes -p stylelint -p stylelint-config-standard -- stylelint --config=.perf-config/.stylelintrc.json "${{ inputs.site_dir }}/**/*.css"
+          fi

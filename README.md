@@ -24,6 +24,8 @@ The reusable workflow checks out the calling site as the workspace root (the cod
 | Asset guard | `tools/asset-guard.sh` | Fail-fast: banned formats, size caps, `.DS_Store`, content-hash |
 | Asset hasher | `tools/hash-assets.mjs` | Content-hash assets, rewrite HTML/CSS refs |
 | Budgets bridge | `tools/budgets-to-lhci.mjs` | Derive LHCI assertions from budgets |
+| HTML lint | `html-validate.config.json` | Shared html-validate ruleset (perf + a11y errors) |
+| CSS lint | `.stylelintrc.json` | Shared stylelint ruleset (bans `@import`, vendor prefixes, etc.) |
 
 ## Page tiers
 
@@ -56,6 +58,7 @@ Each site is a separate GitHub repo. Steps:
 4. (Optional) `<site-repo>/lighthouserc.json` to override the shared LHCI config.
 5. (Optional) `<site-repo>/perf-budgets.override.json` — deep-merged onto base.
 6. (Optional) `<site-repo>/.size-limit.json` for JS/CSS bundle deltas.
+6a. (Optional) `<site-repo>/html-validate.config.json` and/or `.stylelintrc.json` to extend or override shared lint rules. Without these, the shared configs in perf-config are used and lint errors fail the gate.
 7. Smoke-test locally: clone perf-config sibling to your site, run `bash ../perf-config/tools/asset-guard.sh dist`.
 8. Open PR — gate runs.
 
