@@ -1,7 +1,7 @@
 # Reusable performance workflow for the perf-config shared pipeline.
 #
 # Cross-repo invocation (each consuming site is its own GitHub repo):
-#   uses: OWNER_PLACEHOLDER/perf-config/.github/workflows/perf.yml@v1
+#   uses: HerrEmil/perf-config/.github/workflows/perf.yml@v1
 #   with:
 #     site_dir: dist
 #     tier: spa
@@ -57,13 +57,13 @@ jobs:
         uses: actions/checkout@v4
 
       # 2. perf-config — pulled into ./.perf-config/ at the pinned ref.
-      # NOTE: OWNER_PLACEHOLDER must be replaced with the real GitHub owner/org
+      # NOTE: HerrEmil must be replaced with the real GitHub owner/org
       # before this workflow can run. Left explicit so misconfiguration fails
       # loudly rather than silently checking out the wrong repo.
       - name: Checkout perf-config
         uses: actions/checkout@v4
         with:
-          repository: OWNER_PLACEHOLDER/perf-config
+          repository: HerrEmil/perf-config
           path: .perf-config
           ref: ${{ inputs.perf_config_ref }}
 

@@ -9,7 +9,7 @@ Shared source of truth for performance rules across all herremil sites. Reusable
 `perf-config` is a **standalone GitHub repo**. Each consuming site is its own independent repo and pulls perf-config in via a GitHub Actions reusable workflow:
 
 ```yaml
-uses: OWNER_PLACEHOLDER/perf-config/.github/workflows/perf.yml@v1
+uses: HerrEmil/perf-config/.github/workflows/perf.yml@v1
 ```
 
 The reusable workflow checks out the calling site as the workspace root (the code being audited) and checks out perf-config into `./.perf-config/` (tools and configs). Sites pin to a tag (`@v1`) to receive patch updates automatically.
@@ -51,7 +51,7 @@ Score floors (LHCI): performance ≥ 0.92, a11y = 1.0, best-practices ≥ 0.95, 
 Each site is a separate GitHub repo. Steps:
 
 1. Copy `examples/calling-workflow.yml` to `<site-repo>/.github/workflows/perf.yml`.
-2. Replace `OWNER_PLACEHOLDER` with the real GitHub owner/org of perf-config.
+2. Replace `HerrEmil` with the real GitHub owner/org of perf-config.
 3. Edit the `with:` block — set `site_dir`, `build_cmd`, `tier`, `package_manager`.
 4. (Optional) `<site-repo>/lighthouserc.json` to override the shared LHCI config.
 5. (Optional) `<site-repo>/perf-budgets.override.json` — deep-merged onto base.
@@ -121,12 +121,12 @@ gh repo create <owner>/perf-config --public --source=. --remote=origin --descrip
 git push -u origin main
 git push --tags
 
-# 3. Replace OWNER_PLACEHOLDER in:
+# 3. Replace HerrEmil in:
 #      - .github/workflows/perf.yml  (the `repository:` field)
 #      - examples/calling-workflow.yml  (the `uses:` line)
 #      - README.md  (the `uses:` example near the top)
 #    Commit, retag v1, push.
 
 # 4. Each consuming site repo: copy examples/calling-workflow.yml into
-#    that repo's .github/workflows/, replace OWNER_PLACEHOLDER, commit, push.
+#    that repo's .github/workflows/, replace HerrEmil, commit, push.
 ```

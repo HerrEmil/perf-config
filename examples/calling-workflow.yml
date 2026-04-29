@@ -1,6 +1,6 @@
 # Example: minimal PR workflow for a site consuming perf-config.
 # Drop this at .github/workflows/perf.yml in your site repo, edit the
-# `with:` block, and replace OWNER_PLACEHOLDER with the real GitHub owner.
+# `with:` block, and replace HerrEmil with the real GitHub owner.
 name: perf
 
 on:
@@ -15,7 +15,7 @@ jobs:
   perf:
     # Pin to the v1 tag so patch updates flow in automatically.
     # Bump to a specific tag (e.g. @v1.0.0) if you want immutability.
-    uses: OWNER_PLACEHOLDER/perf-config/.github/workflows/perf.yml@v1
+    uses: HerrEmil/perf-config/.github/workflows/perf.yml@v1
     with:
       site_dir: dist             # built output, relative to this repo's root
       build_cmd: yarn build      # or "npm run build" / "pnpm build" / "echo no build"
