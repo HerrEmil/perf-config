@@ -83,10 +83,12 @@ jobs:
         id: sl
         working-directory: site
         run: |
+          # `--silent` suppresses package-manager preamble that would otherwise
+          # contaminate stdout and break downstream jq parsing.
           case "${{ matrix.site.pkg }}" in
-            yarn) yarn size-limit --json > /tmp/sl.json ;;
-            npm)  npm exec -- size-limit --json > /tmp/sl.json ;;
-            pnpm) pnpm exec size-limit --json > /tmp/sl.json ;;
+            yarn) yarn --silent size-limit --json > /tmp/sl.json ;;
+            npm)  npm exec --silent -- size-limit --json > /tmp/sl.json ;;
+            pnpm) pnpm --silent exec size-limit --json > /tmp/sl.json ;;
           esac
           cat /tmp/sl.json
 
@@ -143,6 +145,10 @@ jobs:
             [ -f "$f" ] || continue
             site=$(basename "$(dirname "$f")" | sed 's/^sl-//')
             # size-limit --json emits an array of {name, size, sizeLimit, passed, ...}
+            if ! jq -e . "$f" >/dev/null 2>&1; then
+              echo "::warning ::skipping $site — sl.json is not valid JSON"
+              continue
+            fi
             jq -c --arg ts "$ts" '.[] | {ts: $ts, name: .name, size: .size, limit: (.sizeLimit // null), passed: (.passed // null)}' "$f" \
               >> "history/sites/${site}.ndjson"
             echo "appended $(jq length "$f") row(s) for $site"
