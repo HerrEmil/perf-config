@@ -1,0 +1,184 @@
+# Weekly LHCI cron — runs strict Lighthouse against every wired prod URL
+# and opens a regression issue when the same site fails two weeks in a row.
+#
+# Manual run: `gh workflow run lhci-weekly.yml -R HerrEmil/perf-config`
+#
+# Cross-repo issue creation requires a PAT with `repo` scope stored in the
+# `HERREMIL_ISSUE_TOKEN` secret. Without it the workflow falls back to opening
+# the issue in `HerrEmil/perf-config` itself (using the default GITHUB_TOKEN)
+# and tags the affected site in the title.
+#
+# Streak state (consecutive failures per site) is persisted on a dedicated
+# orphan branch `lhci-state`. One JSON file per site under `sites/<key>.json`.
+name: lhci-weekly
+
+on:
+  schedule:
+    # Mondays 06:00 UTC. GitHub may delay scheduled runs under load.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      reset_state:
+        description: "Reset 2-fail streak state for all sites."
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  lhci:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1   # serialize to avoid lhci-state branch push contention
+      matrix:
+        site:
+          - { key: cv,                url: "https://cv.herremil.com",                repo: "HerrEmil/cv" }
+          - { key: herremil-com,      url: "https://herremil.com",                   repo: "HerrEmil/HerrEmil.com" }
+          - { key: gameland,          url: "https://gameland.herremil.com",          repo: "HerrEmil/GameLand" }
+          - { key: legendaryjourney,  url: "https://legendaryjourney.herremil.com",  repo: "HerrEmil/LegendaryJourney" }
+          - { key: sandpiper,         url: "https://sandpiper.herremil.com",         repo: "HerrEmil/Sandpiper" }
+          - { key: chess,             url: "https://chess.herremil.com",             repo: "HerrEmil/Chess" }
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Write strict LHCI config
+        run: |
+          cat > /tmp/lhci-weekly.json <<JSON
+          {
+            "ci": {
+              "collect": {
+                "url": ["${{ matrix.site.url }}"],
+                "numberOfRuns": 3,
+                "settings": { "preset": "desktop" }
+              },
+              "assert": {
+                "preset": "lighthouse:no-pwa",
+                "assertions": {
+                  "categories:performance": ["error", { "minScore": 0.98 }],
+                  "largest-contentful-paint": ["error", { "maxNumericValue": 1500 }]
+                }
+              },
+              "upload": { "target": "temporary-public-storage" }
+            }
+          }
+          JSON
+          cat /tmp/lhci-weekly.json
+
+      - name: Run LHCI (3-run median)
+        id: lhci
+        continue-on-error: true
+        run: npx --yes @lhci/cli@latest autorun --config=/tmp/lhci-weekly.json
+
+      - name: Checkout state branch
+        uses: actions/checkout@v4
+        with:
+          ref: lhci-state
+          path: state
+          fetch-depth: 1
+        continue-on-error: true   # branch may not exist yet on first run
+
+      - name: Update streak state
+        id: streak
+        env:
+          SITE_KEY: ${{ matrix.site.key }}
+          STATUS: ${{ steps.lhci.outcome == 'success' && 'pass' || 'fail' }}
+          RESET: ${{ inputs.reset_state }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [ ! -d state/.git ]; then
+            mkdir -p state
+            cd state
+            git init -q -b lhci-state
+            git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+            cd ..
+          fi
+          cd state
+          git config user.name  "lhci-cron[bot]"
+          git config user.email "lhci-cron@users.noreply.github.com"
+
+          mkdir -p sites
+          state_file="sites/${SITE_KEY}.json"
+
+          if [ "$RESET" = "true" ]; then
+            rm -f "$state_file"
+          fi
+
+          prev_streak=0
+          if [ -f "$state_file" ]; then
+            prev_streak=$(jq -r '.fail_streak // 0' "$state_file")
+          fi
+
+          if [ "$STATUS" = "fail" ]; then
+            new_streak=$((prev_streak + 1))
+          else
+            new_streak=0
+          fi
+
+          jq -n --arg status "$STATUS" \
+                --argjson streak "$new_streak" \
+                --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                --arg run "$RUN_ID" \
+                '{last_status: $status, fail_streak: $streak, last_run_at: $ts, last_run_id: $run}' \
+                > "$state_file"
+
+          echo "fail_streak=$new_streak" >> "$GITHUB_OUTPUT"
+          if [ "$STATUS" = "fail" ] && [ "$new_streak" -ge 2 ]; then
+            echo "flag=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "flag=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no state change"
+          else
+            git commit -m "lhci-state: ${SITE_KEY} ${STATUS} streak=${new_streak}"
+            # Push; if branch is brand-new, push -u; if exists, normal push.
+            git push origin lhci-state || git push -u origin HEAD:lhci-state
+          fi
+
+      - name: Open regression issue
+        if: steps.streak.outputs.flag == 'true'
+        env:
+          ISSUE_TOKEN: ${{ secrets.HERREMIL_ISSUE_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SITE_KEY: ${{ matrix.site.key }}
+          SITE_URL: ${{ matrix.site.url }}
+          SITE_REPO: ${{ matrix.site.repo }}
+          STREAK: ${{ steps.streak.outputs.fail_streak }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="[perf-regression] ${SITE_KEY} (${SITE_URL}) — ${STREAK} consecutive LHCI failures"
+          body=$(cat <<MD
+          Weekly LHCI run failed for **${SITE_URL}** for the **${STREAK}th** consecutive week.
+
+          - Strict thresholds: \`performance >= 0.98\`, \`largest-contentful-paint <= 1500ms\` (3-run median, desktop preset)
+          - Run: ${RUN_URL}
+          - Source: \`HerrEmil/perf-config/.github/workflows/lhci-weekly.yml\`
+
+          To clear: investigate, ship a fix, and the next green weekly run resets the streak. To suppress for a single week, run \`gh workflow run lhci-weekly.yml -R HerrEmil/perf-config -f reset_state=true\` after triaging.
+          MD
+          )
+
+          if [ -n "${ISSUE_TOKEN:-}" ]; then
+            echo "Creating issue in $SITE_REPO via PAT"
+            GH_TOKEN="$ISSUE_TOKEN" gh issue create \
+              --repo "$SITE_REPO" \
+              --title "$title" \
+              --body  "$body"
+          else
+            echo "HERREMIL_ISSUE_TOKEN not set — falling back to in-repo issue on perf-config"
+            gh issue create \
+              --repo "${{ github.repository }}" \
+              --title "$title" \
+              --body  "$body (target repo: \`$SITE_REPO\`)"
+          fi
