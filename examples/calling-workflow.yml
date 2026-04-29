@@ -20,6 +20,6 @@ jobs:
       site_dir: dist             # built output, relative to this repo's root
       build_cmd: yarn build      # or "npm run build" / "pnpm build" / "echo no build"
       tier: spa                  # static | spa | game — picks the budget profile
-      package_manager: yarn      # yarn | npm | pnpm
+      package_manager: yarn      # yarn | npm | pnpm | none (none = no package.json)
       node_version: "20"
       # perf_config_ref: v1      # optional; defaults to v1

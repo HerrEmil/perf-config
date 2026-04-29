@@ -33,7 +33,7 @@ on:
         required: false
         default: "20"
       package_manager:
-        description: "Package manager: yarn | npm | pnpm."
+        description: "Package manager: yarn | npm | pnpm | none. `none` skips Node setup, install, build, and size-limit (use for static sites with no package.json)."
         type: string
         required: false
         default: "yarn"
@@ -67,11 +67,21 @@ jobs:
           path: .perf-config
           ref: ${{ inputs.perf_config_ref }}
 
-      - name: Setup Node.js
+      # Node is required by LHCI and the lint steps even when the site itself
+      # has no package.json — we still install via npx in those steps. Cache is
+      # only enabled when there's a package manager to cache for.
+      - name: Setup Node.js (cached)
+        if: inputs.package_manager != 'none'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node_version }}
           cache: ${{ inputs.package_manager }}
+
+      - name: Setup Node.js (no cache)
+        if: inputs.package_manager == 'none'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
 
       # Install dependencies using the site's chosen package manager.
       - name: Install (yarn)
@@ -88,21 +98,30 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
 
-      # Build step is skipped for the static tier (pre-built sites).
+      # Build step is skipped for static tier (pre-built sites) and for
+      # `package_manager: none` (no toolchain to run a build with).
       - name: Build
-        if: inputs.tier != 'static'
+        if: inputs.tier != 'static' && inputs.package_manager != 'none'
         run: ${{ inputs.build_cmd }}
 
       # Asset guard: enforces filename hashing, gzip presence, no source maps in prod, etc.
+      # Optional `.asset-guard-override.json` at the site repo root exempts listed
+      # files from failing until their sunset date.
       - name: Asset guard
-        run: bash .perf-config/tools/asset-guard.sh ${{ inputs.site_dir }}
+        run: |
+          if [ -f .asset-guard-override.json ]; then
+            bash .perf-config/tools/asset-guard.sh "${{ inputs.site_dir }}" .asset-guard-override.json
+          else
+            bash .perf-config/tools/asset-guard.sh "${{ inputs.site_dir }}"
+          fi
 
       # size-limit tracks JS/CSS bundle size against per-site .size-limit.json.
       # Run directly via the chosen package manager so locally-installed presets
       # (e.g. @size-limit/preset-app) are picked up; andresz1/size-limit-action
-      # forces npm, which silently drops yarn-only deps.
+      # forces npm, which silently drops yarn-only deps. Skipped for `none`
+      # (no package.json → no .size-limit.json).
       - name: size-limit
-        if: inputs.tier != 'static'
+        if: inputs.tier != 'static' && inputs.package_manager != 'none'
         run: |
           case "${{ inputs.package_manager }}" in
             yarn) yarn size-limit ;;
@@ -135,13 +154,24 @@ jobs:
           fi
 
       # CSS lint. Per-site config wins (`.stylelintrc*` / `stylelint.config.*`);
-      # otherwise the shared `.perf-config/.stylelintrc.json` is used. Sites that need
-      # plugins beyond `stylelint-config-standard` should add a local config and
-      # install plugins as devDependencies.
+      # otherwise the shared `.perf-config/.stylelintrc.json` is used. The shared
+      # config `extends` `stylelint-config-standard`, which only resolves when
+      # both packages live in the same node_modules tree. `npx -p A -p B` uses
+      # separate npx caches and breaks that resolution, so we install both into
+      # a tmp dir and invoke the binary directly.
       - name: CSS perf-lint
         run: |
           if ls .stylelintrc .stylelintrc.json .stylelintrc.js .stylelintrc.cjs .stylelintrc.mjs .stylelintrc.yaml .stylelintrc.yml stylelint.config.js stylelint.config.cjs stylelint.config.mjs 2>/dev/null | grep -q .; then
             npx --yes stylelint "${{ inputs.site_dir }}/**/*.css"
           else
-            npx --yes -p stylelint -p stylelint-config-standard -- stylelint --config=.perf-config/.stylelintrc.json "${{ inputs.site_dir }}/**/*.css"
+            # `--config-basedir` tells stylelint where to resolve `extends`
+            # from — must point at the tree where stylelint-config-standard is
+            # installed (otherwise it looks next to the config file in
+            # .perf-config/, where the package isn't installed).
+            mkdir -p /tmp/stylelint-runner
+            (cd /tmp/stylelint-runner && npm init -y >/dev/null 2>&1 && npm install --no-save --no-audit --no-fund stylelint stylelint-config-standard)
+            /tmp/stylelint-runner/node_modules/.bin/stylelint \
+              --config="$(pwd)/.perf-config/.stylelintrc.json" \
+              --config-basedir=/tmp/stylelint-runner \
+              "${{ inputs.site_dir }}/**/*.css"
           fi

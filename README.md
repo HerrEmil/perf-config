@@ -59,8 +59,15 @@ Each site is a separate GitHub repo. Steps:
 5. (Optional) `<site-repo>/perf-budgets.override.json` — deep-merged onto base.
 6. (Optional) `<site-repo>/.size-limit.json` for JS/CSS bundle deltas.
 6a. (Optional) `<site-repo>/html-validate.config.json` and/or `.stylelintrc.json` to extend or override shared lint rules. Without these, the shared configs in perf-config are used and lint errors fail the gate.
+6b. (Optional) `<site-repo>/.asset-guard-override.json` — exempt specific files from asset-guard failures until a sunset date:
+    ```json
+    { "exempt": [{ "path": "fonts/avenir.otf", "sunset": "2026-09-30", "reason": "task 26 deferred" }] }
+    ```
+    Paths are relative to `site_dir`. Past `sunset`, the file fails again.
 7. Smoke-test locally: clone perf-config sibling to your site, run `bash ../perf-config/tools/asset-guard.sh dist`.
 8. Open PR — gate runs.
+
+**Static sites without a `package.json`** (hand-written HTML/CSS, no toolchain): set `package_manager: none` in the `with:` block. Skips Node install, build, and size-limit; asset-guard / LHCI / html-validate / stylelint still run via `npx`.
 
 Use the chess repo as the canonical reference; copy its config to bootstrap.
 
