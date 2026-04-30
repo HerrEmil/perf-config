@@ -63,17 +63,37 @@ jobs:
         id: fetch_rc
         env:
           SITE_REPO: ${{ matrix.site.repo }}
+          # GITHUB_TOKEN is scoped to perf-config and cannot read other repos
+          # (raw.githubusercontent.com returns 404 for private siblings even
+          # with the bearer header). HERREMIL_ISSUE_TOKEN is a cross-repo PAT
+          # with `repo` scope, so use it first when available; fall back to
+          # unauth raw.gh fetch for public sites if the PAT isn't set.
+          ISSUE_TOKEN: ${{ secrets.HERREMIL_ISSUE_TOKEN }}
         run: |
           set -euo pipefail
-          # Try main, fall back to master. Public repos so no auth needed; the
-          # token avoids unauth rate limits on the runner.
+          rm -f /tmp/site-lhrc.json
           for branch in main master; do
-            url="https://raw.githubusercontent.com/${SITE_REPO}/${branch}/lighthouserc.json"
-            if curl -fsSL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$url" -o /tmp/site-lhrc.json; then
-              echo "fetched lighthouserc.json from ${SITE_REPO}@${branch}"
-              cat /tmp/site-lhrc.json
-              echo "found=true" >> "$GITHUB_OUTPUT"
-              exit 0
+            if [ -n "${ISSUE_TOKEN:-}" ]; then
+              # Use the Contents API — works for both public and private repos
+              # with the PAT. `-f` makes curl exit non-zero on 404.
+              api="https://api.github.com/repos/${SITE_REPO}/contents/lighthouserc.json?ref=${branch}"
+              if curl -fsSL \
+                   -H "Authorization: Bearer ${ISSUE_TOKEN}" \
+                   -H "Accept: application/vnd.github.v3.raw" \
+                   "$api" -o /tmp/site-lhrc.json; then
+                echo "fetched lighthouserc.json from ${SITE_REPO}@${branch} via Contents API"
+                cat /tmp/site-lhrc.json
+                echo "found=true" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+            else
+              url="https://raw.githubusercontent.com/${SITE_REPO}/${branch}/lighthouserc.json"
+              if curl -fsSL "$url" -o /tmp/site-lhrc.json; then
+                echo "fetched lighthouserc.json from ${SITE_REPO}@${branch} (unauth raw.gh)"
+                cat /tmp/site-lhrc.json
+                echo "found=true" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
             fi
           done
           echo "no lighthouserc.json in ${SITE_REPO} (main/master) — will use inline shared fallback in next step"
