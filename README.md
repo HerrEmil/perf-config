@@ -111,7 +111,7 @@ Edit `perf-budgets.json` (or tier variant), commit, retag `v1` → all sites pin
 
 | Workflow | Cron | What it does |
 |---|---|---|
-| `lhci-weekly.yml` | Mon 06:00 UTC | Strict LHCI (perf >= 0.98, LCP <= 1500ms) against each prod URL. Opens regression issue after **2 consecutive** failures. State on `lhci-state` orphan branch. |
+| `lhci-weekly.yml` | Mon 06:00 UTC | Per-site LHCI against each prod URL using that site's own `lighthouserc.json` (same bar as the on-PR gate, run with `collect.url` rewritten to the live URL). Opens regression issue after **2 consecutive** failures. State on `lhci-state` orphan branch. |
 | `size-limit-dashboard.yml` | Mon 07:00 UTC | Builds each site, runs `size-limit --json`, appends to `size-limit-history`, renders sparkline dashboard to `gh-pages` (https://herremil.github.io/perf-config/). |
 
 Cross-repo issue creation needs a `HERREMIL_ISSUE_TOKEN` repo secret (PAT with `repo` scope). Without it, `lhci-weekly.yml` falls back to opening the issue in `perf-config` itself.

@@ -1,5 +1,6 @@
-# Weekly LHCI cron — runs strict Lighthouse against every wired prod URL
-# and opens a regression issue when the same site fails two weeks in a row.
+# Weekly LHCI cron — runs each site's own Lighthouse assertions against its
+# live prod URL and opens a regression issue when the same site fails two
+# weeks in a row.
 #
 # Manual run: `gh workflow run lhci-weekly.yml -R HerrEmil/perf-config`
 #
@@ -10,6 +11,13 @@
 #
 # Streak state (consecutive failures per site) is persisted on a dedicated
 # orphan branch `lhci-state`. One JSON file per site under `sites/<key>.json`.
+#
+# Threshold model: per-site. Each site's `lighthouserc.json` (the same file
+# the on-PR perf gate uses) is the bar. The cron rewrites `collect` to point
+# at the live URL but keeps `assert` intact — so a weekly failure means
+# "site is below its own threshold", i.e. a regression against the bar that
+# site agreed to maintain. No universal aspirational bar: see redesign notes
+# in commit history (replaces strict perf>=0.98 / LCP<=1500ms desktop).
 name: lhci-weekly
 
 on:
@@ -48,30 +56,71 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Write strict LHCI config
+      # Pull the site's own lighthouserc.json. This is the file its on-PR perf
+      # gate uses, so the weekly cron measures against the same bar — making
+      # the cron a true regression detector.
+      - name: Fetch site lighthouserc.json
+        id: fetch_rc
+        env:
+          SITE_REPO: ${{ matrix.site.repo }}
         run: |
-          cat > /tmp/lhci-weekly.json <<JSON
+          set -euo pipefail
+          # Try main, fall back to master. Public repos so no auth needed; the
+          # token avoids unauth rate limits on the runner.
+          for branch in main master; do
+            url="https://raw.githubusercontent.com/${SITE_REPO}/${branch}/lighthouserc.json"
+            if curl -fsSL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$url" -o /tmp/site-lhrc.json; then
+              echo "fetched lighthouserc.json from ${SITE_REPO}@${branch}"
+              cat /tmp/site-lhrc.json
+              echo "found=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "no lighthouserc.json in ${SITE_REPO} (main/master) — will use inline shared fallback in next step"
+          rm -f /tmp/site-lhrc.json
+          echo "found=false" >> "$GITHUB_OUTPUT"
+
+      # Rewrite the site's lighthouserc.json so it audits the live URL instead
+      # of a local staticDistDir. Assertions are preserved verbatim — that's
+      # the per-site regression bar.
+      - name: Build LHCI config for live URL
+        env:
+          SITE_URL: ${{ matrix.site.url }}
+        run: |
+          set -euo pipefail
+          # If the site's rc didn't exist, fall back to a sane shared default.
+          if [ ! -s /tmp/site-lhrc.json ]; then
+            cat > /tmp/site-lhrc.json <<'JSON'
           {
             "ci": {
-              "collect": {
-                "url": ["${{ matrix.site.url }}"],
-                "numberOfRuns": 3,
-                "settings": { "preset": "desktop" }
-              },
+              "collect": { "numberOfRuns": 3 },
               "assert": {
                 "preset": "lighthouse:no-pwa",
                 "assertions": {
-                  "categories:performance": ["error", { "minScore": 0.98 }],
-                  "largest-contentful-paint": ["error", { "maxNumericValue": 1500 }]
+                  "categories:performance": ["error", { "minScore": 0.92 }],
+                  "largest-contentful-paint": ["error", { "maxNumericValue": 1800 }]
                 }
-              },
-              "upload": { "target": "temporary-public-storage" }
+              }
             }
           }
           JSON
+          fi
+          # Strip staticDistDir, force url to the live URL, keep numberOfRuns
+          # (default to 3 if the site didn't set it), keep assert as-is, force
+          # upload target to temporary-public-storage so reports are linkable.
+          jq --arg url "$SITE_URL" '
+            .ci.collect = (
+              (.ci.collect // {})
+              | del(.staticDistDir)
+              | .url = [$url]
+              | .numberOfRuns = (.numberOfRuns // 3)
+            )
+            | .ci.upload = { "target": "temporary-public-storage" }
+          ' /tmp/site-lhrc.json > /tmp/lhci-weekly.json
+          echo "--- effective LHCI config ---"
           cat /tmp/lhci-weekly.json
 
-      - name: Run LHCI (3-run median)
+      - name: Run LHCI (per-site thresholds, live URL)
         id: lhci
         continue-on-error: true
         run: npx --yes @lhci/cli@latest autorun --config=/tmp/lhci-weekly.json
@@ -161,11 +210,11 @@ jobs:
           body=$(cat <<MD
           Weekly LHCI run failed for **${SITE_URL}** for the **${STREAK}th** consecutive week.
 
-          - Strict thresholds: \`performance >= 0.98\`, \`largest-contentful-paint <= 1500ms\` (3-run median, desktop preset)
+          - Thresholds: site's own \`lighthouserc.json\` (same bar as the on-PR perf gate), evaluated against the live URL with 3-run median.
           - Run: ${RUN_URL}
           - Source: \`HerrEmil/perf-config/.github/workflows/lhci-weekly.yml\`
 
-          To clear: investigate, ship a fix, and the next green weekly run resets the streak. To suppress for a single week, run \`gh workflow run lhci-weekly.yml -R HerrEmil/perf-config -f reset_state=true\` after triaging.
+          To clear: investigate the live-URL regression vs the site's own bar, ship a fix, and the next green weekly run resets the streak. To suppress for a single week, run \`gh workflow run lhci-weekly.yml -R HerrEmil/perf-config -f reset_state=true\` after triaging.
           MD
           )
 
