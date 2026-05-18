@@ -10,3 +10,5 @@
 {"ts":"2026-05-04T07:55:03Z","name":"CSS","size":554,"limit":5000,"passed":true}
 {"ts":"2026-05-11T08:07:28Z","name":"JS","size":1397,"limit":10000,"passed":true}
 {"ts":"2026-05-11T08:07:28Z","name":"CSS","size":554,"limit":5000,"passed":true}
+{"ts":"2026-05-18T08:18:46Z","name":"JS","size":1397,"limit":10000,"passed":true}
+{"ts":"2026-05-18T08:18:46Z","name":"CSS","size":554,"limit":5000,"passed":true}
