@@ -50,6 +50,7 @@ jobs:
           - { key: legendaryjourney,  url: "https://legendaryjourney.herremil.com",  repo: "HerrEmil/LegendaryJourney" }
           - { key: sandpiper,         url: "https://sandpiper.herremil.com",         repo: "HerrEmil/Sandpiper" }
           - { key: chess,             url: "https://chess.herremil.com",             repo: "HerrEmil/Chess" }
+          - { key: house-finder, url: "https://house-finder.herremil.com", repo: "HerrEmil/house-finder" }
     steps:
       - name: Setup Node
         uses: actions/setup-node@v4
