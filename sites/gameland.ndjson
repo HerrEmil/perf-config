@@ -26,3 +26,9 @@
 {"ts":"2026-06-29T08:36:06Z","name":"CSS","size":554,"limit":5000,"passed":true}
 {"ts":"2026-07-06T08:28:07Z","name":"JS","size":1326,"limit":10000,"passed":true}
 {"ts":"2026-07-06T08:28:07Z","name":"CSS","size":594,"limit":5000,"passed":true}
+{"ts":"2026-07-13T10:15:07Z","name":"Core JS (initial boot)","size":953,"limit":1500,"passed":true}
+{"ts":"2026-07-13T10:15:07Z","name":"Shell screens JS","size":1719,"limit":2500,"passed":true}
+{"ts":"2026-07-13T10:15:07Z","name":"Game: Bear Hunt","size":3841,"limit":4500,"passed":true}
+{"ts":"2026-07-13T10:15:07Z","name":"Game: Block Breaker","size":3463,"limit":4500,"passed":true}
+{"ts":"2026-07-13T10:15:07Z","name":"Game: Cave Flyer","size":3425,"limit":4500,"passed":true}
+{"ts":"2026-07-13T10:15:07Z","name":"CSS","size":594,"limit":5000,"passed":true}
