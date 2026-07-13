@@ -18,6 +18,7 @@ seo ≥ 0.95, LCP ≤ 1800 ms, CLS ≤ 0.05, TBT ≤ 180 ms, TTI ≤ 2500 ms.
 | 2026-07-12 | cv | accessibility | **0.93 → 1.00** | `h2` date-range `<span>`s were `color: grey` (#808080, 3.94:1 on white) — failed WCAG AA on 14 nodes. Darkened to `#666` (5.7:1). |
 | 2026-07-12 | cv | best-practices | **0.96 → 1.00** | No favicon → Chrome requested `/favicon.ico` → 404 logged as a console error (`errors-in-console`). Added an inline `data:` SVG favicon (no extra request). |
 | 2026-07-13 | HerrEmil.com | accessibility (axe landmarks) | **2 violations → 0** | Homepage (en + sv) + 404 had no `<main>` landmark — all content sat in plain `<div>`s, so axe-core flagged `landmark-one-main` + `region` on every page. Lighthouse's coarse a11y check missed it (stayed 1.00 — it scores neither rule). Promoted the `.main` content `<div>` to a native `<main>` element; the `.main` class is kept so all styling is unchanged (zero visual / CLS impact). |
+| 2026-07-13 | cv | accessibility (axe landmarks) | **2 violations / 4 nodes → 0** | CV content sat in plain `<div>`s across three stacked `.a4` print-page divs — axe flagged `landmark-one-main` (no `<main>`) + `region` ×3 (the un-landmarked `.main` content of each page). Trickier than the HerrEmil.com fix: one `<main>` had to span all three page divs without a duplicate-main. Wrapped the three `.a4` divs in a single `<main>` (the CV is one continuous document; the splits are print-only pagination). `<main>` is a zero-box transparent block, so zero visual / print / CLS impact. Lighthouse a11y stayed 1.00 (doesn't score these rules). |
 
 Commit: `cv@532c92a`. Verified: full `lighthouse:no-pwa` autorun green
 (perf/a11y/bp/seo all 1.00, LCP 1506 ms, CLS 0, TBT 0), asset-guard PASS,
@@ -28,6 +29,14 @@ Playwright) — violations **2 → 0** on `/`, `/sv/index.html`, and `/404.html`
 full LHCI autorun green on `/` + `/sv/` (perf/a11y/seo 1.00, best-practices
 0.96 — art-bound, see exhausted list; LCP 904 ms, CLS 0, TBT 0); asset-guard
 PASS, html-validate + stylelint clean. No score regression vs baseline.
+
+Commit: `cv@bd2e009`. Verified: axe-core 4.12 in real Chrome (via Playwright)
+— violations **2 → 0**, nodes **4 → 0**, passes 23 → 25 on `/index.html`;
+full LHCI autorun green (perf/a11y/bp/seo 1.00, LCP ~1505 ms, CLS 0, TBT 0,
+TTI ~1505 ms); asset-guard PASS, html-validate + stylelint clean. DOM check:
+exactly one `<main>`, all three `.a4` page divs its direct children, header
+inside main, `break-after:page` + A4 heights intact in both screen and print
+media (zero CLS / layout impact). No score regression vs baseline.
 
 ## Exhausted / at-ceiling / intentionally-off — do NOT re-attempt
 
@@ -73,10 +82,6 @@ as gate failures; a future run must re-audit to confirm before implementing.
    `icon-legendaryjourney`. All < 3 KB — marginal byte savings.
 6. **HerrEmil.com below-the-fold icons** could take `loading="lazy"` (11 game
    icons; keep the first as the LCP candidate eager).
-7. **cv missing `<main>` / region** (found 2026-07-13, axe-core) — the CV's
-   three stacked `.a4` "page" divs put their content in plain `<div>`s, so axe
-   flags `region` ×3 and there is no `<main>` landmark. Same class of fix as the
-   HerrEmil.com 2026-07-13 landmark fix, but trickier: one `<main>` must wrap all
-   three `.a4` inner `.main` divs (or the markup restructured) **without**
-   disturbing the print/A4 pagination (`break-after: page`, `@page`). Re-verify
-   print layout + LHCI before committing. This is the next-biggest real a11y gap.
+
+_(Item 7 — cv missing `<main>` / region — DONE 2026-07-13, see fixes table
+`cv@bd2e009`.)_
