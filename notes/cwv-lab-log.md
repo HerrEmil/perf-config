@@ -20,6 +20,7 @@ seo ≥ 0.95, LCP ≤ 1800 ms, CLS ≤ 0.05, TBT ≤ 180 ms, TTI ≤ 2500 ms.
 | 2026-07-13 | HerrEmil.com | accessibility (axe landmarks) | **2 violations → 0** | Homepage (en + sv) + 404 had no `<main>` landmark — all content sat in plain `<div>`s, so axe-core flagged `landmark-one-main` + `region` on every page. Lighthouse's coarse a11y check missed it (stayed 1.00 — it scores neither rule). Promoted the `.main` content `<div>` to a native `<main>` element; the `.main` class is kept so all styling is unchanged (zero visual / CLS impact). |
 | 2026-07-13 | cv | accessibility (axe landmarks) | **2 violations / 4 nodes → 0** | CV content sat in plain `<div>`s across three stacked `.a4` print-page divs — axe flagged `landmark-one-main` (no `<main>`) + `region` ×3 (the un-landmarked `.main` content of each page). Trickier than the HerrEmil.com fix: one `<main>` had to span all three page divs without a duplicate-main. Wrapped the three `.a4` divs in a single `<main>` (the CV is one continuous document; the splits are print-only pagination). `<main>` is a zero-box transparent block, so zero visual / print / CLS impact. Lighthouse a11y stayed 1.00 (doesn't score these rules). |
 | 2026-07-14 | cv | LCP (largest-contentful-paint) | **1504 → 1279 ms** (7-run median, −225 ms / ~15%) | LCP element is the intro `<p>` (body text in Nunito Sans), so the body font is the LCP-critical resource. Retuned the four `<head>` preloads: body font `nunito-sans` → `fetchpriority="high"` + listed first (wins bandwidth under Lantern throttling); `bitter-latin-italic` (below-the-fold job titles only) → `fetchpriority="low"` but **kept** as a preload; headshot avif → dropped its `fetchpriority="high"` (it is not the LCP element). FCP unchanged (614→615 ms), CLS 0, all four categories 1.00 — no regression. |
+| 2026-07-14 | HerrEmil.com | accessibility (redundant heading name) | **20 → 0 headings** | Every game `<h2>` wrapped an icon whose `alt` duplicated the visible heading text (`<img alt="Sandpiper">Sandpiper`), so each heading's *accessible name* was the icon alt **concatenated** with the text → announced twice by screen readers ("SandpiperSandpiper") on all 10 games × en+sv = **20 headings**. axe/Lighthouse do **not** flag redundant *present* alt (it's not a WCAG violation), so it survived every prior pass — including the same-day "no actionable gap" note below, which relied on axe/LHCI cleanliness. The icon sits beside its own name → it's decorative: set `alt=""`. Heading accessible name now equals its visible text. |
 
 Commit: `cv@532c92a`. Verified: full `lighthouse:no-pwa` autorun green
 (perf/a11y/bp/seo all 1.00, LCP 1506 ms, CLS 0, TBT 0), asset-guard PASS,
@@ -53,13 +54,28 @@ Lantern FCP to ~905 ms; keeping it as a `low` preload recovered FCP while the
 real first-paint change). Observed trace: all four preloads still finish < 45 ms
 wall-clock; the win is entirely in Lantern's shared-bandwidth simulation.
 
-**HerrEmil.com — no actionable gap this run (2026-07-14).** Re-audited both
+Commit: `HerrEmil.com@62a08d0`. Verified: targeted metric = headings whose
+accessible name ≠ visible text (the icon `alt` is concatenated into the `<h2>`
+accessible name), measured by reconstructing each `<h2>`'s accessible name via
+Playwright: **20 → 0** across `/` + `/sv/` (10 games each). axe-core 4.x re-run
+**0 violations** on `/`, `/sv/`, `/404` in **light + dark** (passes 33/33/19
+unchanged — no regression). LHCI autorun all assertions green, 0 failures
+(perf/a11y/seo 1.00, bp 0.96 — exhausted `image-size-responsive`; LCP ~904 ms,
+CLS 0, TBT 0 — identical to baseline). asset-guard PASS, html-validate +
+stylelint exit 0. `alt=""` does not render on successfully-loaded local images
+→ zero visual / CLS impact.
+
+**HerrEmil.com — no *scored* gap this run (2026-07-14).** Re-audited both
 locales + 404: axe-core 4.12 (headless + Playwright) clean — 0 violations,
 0 incomplete across `wcag2a/aa, wcag21a/aa, wcag22aa, best-practice` and the
 default ruleset. LHCI (6-run) perf/a11y/seo 1.00, bp 0.96 (only
 `image-size-responsive`, exhausted), LCP ~905 ms (the LCP `<p>` is system-font
 text — no webfont swap to optimize, unlike cv), CLS 0, TBT 0, zero
-opportunity/diagnostic savings. Nothing to fix; cv was the correct target.
+opportunity/diagnostic savings. **Correction (same day, later run):** axe/LHCI
+cleanliness ≠ zero a11y gap. A *manual accessible-name pass* — which no axe rule
+covers — surfaced the redundant in-heading icon `alt` (doubled heading names),
+fixed above in `HerrEmil.com@62a08d0`. Lesson for future runs: always
+reconstruct heading/landmark accessible names by hand even when axe is green.
 
 ## Exhausted / at-ceiling / intentionally-off — do NOT re-attempt
 
