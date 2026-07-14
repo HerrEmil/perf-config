@@ -21,6 +21,7 @@ seo ≥ 0.95, LCP ≤ 1800 ms, CLS ≤ 0.05, TBT ≤ 180 ms, TTI ≤ 2500 ms.
 | 2026-07-13 | cv | accessibility (axe landmarks) | **2 violations / 4 nodes → 0** | CV content sat in plain `<div>`s across three stacked `.a4` print-page divs — axe flagged `landmark-one-main` (no `<main>`) + `region` ×3 (the un-landmarked `.main` content of each page). Trickier than the HerrEmil.com fix: one `<main>` had to span all three page divs without a duplicate-main. Wrapped the three `.a4` divs in a single `<main>` (the CV is one continuous document; the splits are print-only pagination). `<main>` is a zero-box transparent block, so zero visual / print / CLS impact. Lighthouse a11y stayed 1.00 (doesn't score these rules). |
 | 2026-07-14 | cv | LCP (largest-contentful-paint) | **1504 → 1279 ms** (7-run median, −225 ms / ~15%) | LCP element is the intro `<p>` (body text in Nunito Sans), so the body font is the LCP-critical resource. Retuned the four `<head>` preloads: body font `nunito-sans` → `fetchpriority="high"` + listed first (wins bandwidth under Lantern throttling); `bitter-latin-italic` (below-the-fold job titles only) → `fetchpriority="low"` but **kept** as a preload; headshot avif → dropped its `fetchpriority="high"` (it is not the LCP element). FCP unchanged (614→615 ms), CLS 0, all four categories 1.00 — no regression. |
 | 2026-07-14 | HerrEmil.com | accessibility (redundant heading name) | **20 → 0 headings** | Every game `<h2>` wrapped an icon whose `alt` duplicated the visible heading text (`<img alt="Sandpiper">Sandpiper`), so each heading's *accessible name* was the icon alt **concatenated** with the text → announced twice by screen readers ("SandpiperSandpiper") on all 10 games × en+sv = **20 headings**. axe/Lighthouse do **not** flag redundant *present* alt (it's not a WCAG violation), so it survived every prior pass — including the same-day "no actionable gap" note below, which relied on axe/LHCI cleanliness. The icon sits beside its own name → it's decorative: set `alt=""`. Heading accessible name now equals its visible text. |
+| 2026-07-14 | cv | total-byte-weight (font payload) | **95.8 → 86.3 KiB** (EN; SV same, −9.5 KiB / ~10%) | Fonts were **70%** of the page's transfer weight. Each Google "latin" woff2 still carried ~230 glyphs (full Basic Latin + Latin-1 + Latin Extended-A **plus** currency/arrows/math/primes the CV never renders). Re-subset with `pyftsubset` to a future-safe Latin range (`U+0020-017F` + en/em dash, curly quotes, bullet, ellipsis) — covers every glyph both EN + SV use plus any European name Emil could add — keeping **all** layout features + hinting so rendering is byte-identical. Font payload **66848 → 57096 B (−14.6%)** (bitter −12%, bitter-italic −15%, nunito −18%). **Honest scope: this does NOT move LCP.** 40 interleaved Lantern runs (20 base / 20 after) → both median **~1279 ms, Δ +1 ms**; cv's LCP is at a font-byte-independent ~1279 ms floor (see exhausted). The win is real payload/bandwidth (~9.5 KiB less per visitor), not the LCP number. In-place subset (same filenames) — did NOT touch index.html/sv, to stay clear of the concurrent i18n task's HTML edits; the subsetted fonts are now un-hashed and want re-hashing (backlog #1). |
 
 Commit: `cv@532c92a`. Verified: full `lighthouse:no-pwa` autorun green
 (perf/a11y/bp/seo all 1.00, LCP 1506 ms, CLS 0, TBT 0), asset-guard PASS,
@@ -77,7 +78,33 @@ covers — surfaced the redundant in-heading icon `alt` (doubled heading names),
 fixed above in `HerrEmil.com@62a08d0`. Lesson for future runs: always
 reconstruct heading/landmark accessible names by hand even when axe is green.
 
+Commit: `cv@6ff5d89`. Verified: font payload **66848 → 57096 B** (−9752 B,
+−14.6%) with **no tofu** — every used codepoint present in all three subsets,
+proven two ways: `fontTools` cmap coverage of all 78 EN+SV glyphs, and
+`document.fonts.check` in real Chrome (Playwright) over every unique glyph on
+both `/index.html` and `/sv/index.html` → 0 missing, all three faces `loaded`,
+correct face per element (intro `<p>`=Nunito 300, `h1`=Bitter 700, `h2`=Bitter
+*italic* 600, `h2 span`=Nunito). Gate: `lhci assert` **exit 0** — both URLs
+perf/a11y/bp/seo **1.00**, LCP 1279–1280 ms, CLS 0, TBT 0; asset-guard PASS
+(fonts still WARN-unhashed — see backlog #1), html-validate clean, no CSS for
+stylelint. LCP proof-of-flat: 40 interleaved single-URL Lantern runs
+(BASE n=20 median 1279, σ=2.3; AFTER n=20 median 1280) → Δ +1 ms; the ~1354 ms
+AFTER outliers are intermittent CPU-throttle spikes (BASE showed them in the
+pre-i18n run too), not a font effect. **Kept the subset future-safe** (whole
+Latin range, not exact-glyph) per the standing tofu caution. Committed **only**
+`fonts/*.woff2` by explicit path — the concurrent i18n task owns index.html.
+
 ## Exhausted / at-ceiling / intentionally-off — do NOT re-attempt
+
+- **cv LCP is font-*byte*-independent (~1279 ms Lantern floor)** — proven
+  2026-07-14 (`cv@6ff5d89`): re-subsetting all three fonts −14.6 % (−9.75 KiB,
+  incl. −18 % on the LCP-critical Nunito body font) moved LCP by **+1 ms** over
+  40 interleaved runs. The prior run (`cv@4f78c7b`) already took the LCP win
+  from font *preload priority* (bandwidth contention); once that is tuned, the
+  remaining ~1279 ms is set by FCP + the swap/layout paint of the intro `<p>`,
+  which fewer font *bytes* do not touch. **Do NOT chase cv LCP via font size or
+  further preload reshuffling.** (Byte-weight is still worth reducing on its own
+  merits — that's what this fix did — just don't expect the LCP number to move.)
 
 - **cv `uses-responsive-images` / `image-delivery-insight`** — the headshot is
   540×734 for a 35 mm×47.5 mm slot. That is ~390 dpi, i.e. **intentionally
@@ -119,7 +146,13 @@ as gate failures; a future run must re-audit to confirm before implementing.
 1. **cv fonts not content-hashed** — `fonts/bitter-latin.woff2`,
    `bitter-latin-italic.woff2`, `nunito-sans-300-latin.woff2` (asset-guard WARN).
    All > 5 KB so `hash-assets.mjs` would hash them; enables immutable caching.
-   Cache-only win, doesn't move a Lighthouse score.
+   Cache-only win, doesn't move a Lighthouse score. **Now more relevant**
+   (2026-07-14, `cv@6ff5d89`): the fonts were just re-subset in place under the
+   same filenames, so returning visitors could serve a stale cached copy until
+   TTL — content-hashing is the correct way to ship the changed bytes. NB: this
+   edits index.html **and** `sv/index.html` (`../fonts/…` refs) — `hash-assets.mjs`
+   rewrites both, but coordinate with the concurrent i18n task to avoid an
+   index.html collision (or do it when cv's tree is quiet).
 2. **No dark-mode support** — HerrEmil.com is `color-scheme: light` only; cv uses
    fixed light colors. Contrast passes, so not an a11y *failure*, but a real gap.
    Risk: a dark palette must re-clear contrast on the yellow (#fff200) accents.
@@ -132,16 +165,13 @@ as gate failures; a future run must re-audit to confirm before implementing.
    `icon-legendaryjourney`. All < 3 KB — marginal byte savings.
 6. **HerrEmil.com below-the-fold icons** could take `loading="lazy"` (11 game
    icons; keep the first as the LCP candidate eager).
-7. **cv font subsetting** — the three woff2 are the Google-fonts "latin" subsets
-   (bitter-latin 34 KB, bitter-latin-italic 19 KB, nunito-sans 14 KB = 67 KB, vs
-   the 80 KB font budget). The CV is static text using a bounded glyph set, so a
-   `pyftsubset` pass to the actually-used characters would cut font bytes
-   materially and shave a bit more off LCP (the body font gates the text LCP —
-   see 2026-07-14 fix). **Risk: tofu** if the subset misses a glyph a later CV
-   edit introduces (å ä ö é and PR-link punctuation are already needed). Subset
-   to a safe named range (e.g. Latin-1 + the specific extended chars), NOT an
-   exact-glyph set, and re-verify no tofu by rendering. Pairs naturally with #1
-   (subset → re-hash the outputs via `hash-assets.mjs`).
+7. ~~**cv font subsetting**~~ — **DONE 2026-07-14, `cv@6ff5d89`.** Subset all
+   three woff2 to a future-safe whole-Latin range (`U+0020-017F` + typographic
+   punctuation), −14.6 % font payload (66848 → 57096 B), no tofu. Byte-weight
+   win only — **it did NOT move LCP** (proven flat over 40 runs; cv LCP is now
+   in the exhausted list as a font-byte-independent ~1279 ms floor). Kept a safe
+   named range, not exact-glyph, per the tofu caution. Still un-hashed → feeds
+   back into #1.
 
 _(Item 7 — cv missing `<main>` / region — DONE 2026-07-13, `cv@bd2e009`.
  cv LCP font-preload priority — DONE 2026-07-14, `cv@4f78c7b`.
