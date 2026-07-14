@@ -19,6 +19,7 @@ seo ≥ 0.95, LCP ≤ 1800 ms, CLS ≤ 0.05, TBT ≤ 180 ms, TTI ≤ 2500 ms.
 | 2026-07-12 | cv | best-practices | **0.96 → 1.00** | No favicon → Chrome requested `/favicon.ico` → 404 logged as a console error (`errors-in-console`). Added an inline `data:` SVG favicon (no extra request). |
 | 2026-07-13 | HerrEmil.com | accessibility (axe landmarks) | **2 violations → 0** | Homepage (en + sv) + 404 had no `<main>` landmark — all content sat in plain `<div>`s, so axe-core flagged `landmark-one-main` + `region` on every page. Lighthouse's coarse a11y check missed it (stayed 1.00 — it scores neither rule). Promoted the `.main` content `<div>` to a native `<main>` element; the `.main` class is kept so all styling is unchanged (zero visual / CLS impact). |
 | 2026-07-13 | cv | accessibility (axe landmarks) | **2 violations / 4 nodes → 0** | CV content sat in plain `<div>`s across three stacked `.a4` print-page divs — axe flagged `landmark-one-main` (no `<main>`) + `region` ×3 (the un-landmarked `.main` content of each page). Trickier than the HerrEmil.com fix: one `<main>` had to span all three page divs without a duplicate-main. Wrapped the three `.a4` divs in a single `<main>` (the CV is one continuous document; the splits are print-only pagination). `<main>` is a zero-box transparent block, so zero visual / print / CLS impact. Lighthouse a11y stayed 1.00 (doesn't score these rules). |
+| 2026-07-14 | cv | LCP (largest-contentful-paint) | **1504 → 1279 ms** (7-run median, −225 ms / ~15%) | LCP element is the intro `<p>` (body text in Nunito Sans), so the body font is the LCP-critical resource. Retuned the four `<head>` preloads: body font `nunito-sans` → `fetchpriority="high"` + listed first (wins bandwidth under Lantern throttling); `bitter-latin-italic` (below-the-fold job titles only) → `fetchpriority="low"` but **kept** as a preload; headshot avif → dropped its `fetchpriority="high"` (it is not the LCP element). FCP unchanged (614→615 ms), CLS 0, all four categories 1.00 — no regression. |
 
 Commit: `cv@532c92a`. Verified: full `lighthouse:no-pwa` autorun green
 (perf/a11y/bp/seo all 1.00, LCP 1506 ms, CLS 0, TBT 0), asset-guard PASS,
@@ -38,6 +39,28 @@ exactly one `<main>`, all three `.a4` page divs its direct children, header
 inside main, `break-after:page` + A4 heights intact in both screen and print
 media (zero CLS / layout impact). No score regression vs baseline.
 
+Commit: `cv@4f78c7b`. Verified: full LHCI autorun (cv `lighthouserc.json`)
+exit 0 with every assertion green — perf/a11y/bp/seo 1.00, LCP ~1280 ms ≤ 1800,
+CLS 0 ≤ 0.05, TBT 0 ≤ 180, TTI ~1289 ms ≤ 2500; asset-guard PASS, html-validate
+clean, stylelint clean (no CSS). Measured with 7-run before/after medians on the
+cv config: **LCP 1504 → 1279 ms** (before cluster 1503–1509; after cluster
+1278–1281 — fully separated), **FCP 614 → 615 ms (unchanged)**, CLS 0 throughout.
+Isolation runs (7 each) attributed the gain to font-preload prioritization, not
+the headshot: removing the italic preload alone gave LCP 1355 ms but inflated
+Lantern FCP to ~905 ms; keeping it as a `low` preload recovered FCP while the
+`nunito high` + demoted headshot delivered the full LCP win. `observedFCP` stayed
+~65 ms in every variant (the FCP swing was a Lantern-attribution artifact, never a
+real first-paint change). Observed trace: all four preloads still finish < 45 ms
+wall-clock; the win is entirely in Lantern's shared-bandwidth simulation.
+
+**HerrEmil.com — no actionable gap this run (2026-07-14).** Re-audited both
+locales + 404: axe-core 4.12 (headless + Playwright) clean — 0 violations,
+0 incomplete across `wcag2a/aa, wcag21a/aa, wcag22aa, best-practice` and the
+default ruleset. LHCI (6-run) perf/a11y/seo 1.00, bp 0.96 (only
+`image-size-responsive`, exhausted), LCP ~905 ms (the LCP `<p>` is system-font
+text — no webfont swap to optimize, unlike cv), CLS 0, TBT 0, zero
+opportunity/diagnostic savings. Nothing to fix; cv was the correct target.
+
 ## Exhausted / at-ceiling / intentionally-off — do NOT re-attempt
 
 - **cv `uses-responsive-images` / `image-delivery-insight`** — the headshot is
@@ -49,6 +72,17 @@ media (zero CLS / layout impact). No score regression vs baseline.
 - **HerrEmil.com (2026-07-12 audit)** — all 3 audited URLs (`/`, `/devlog/`,
   `/devlog/sandpiper.html`) passed the **full** gate with zero failing
   assertions. No sub-ceiling CWV/a11y gap was actionable this run.
+- **cv "just remove the Bitter-italic preload"** — do NOT. Isolation-tested
+  2026-07-14: dropping the `<link rel=preload>` for `bitter-latin-italic.woff2`
+  entirely makes the browser discover the font late (during layout, when the
+  first italic `<h2>` job title needs it) and fetch it at **VeryHigh**, which
+  pulls it into Lantern's FCP dependency graph and inflates simulated FCP
+  ~612 → ~905 ms — for no LCP gain beyond keeping it at `fetchpriority="low"`.
+  The shipped fix (`cv@4f78c7b`) keeps it preloaded at **low** priority. Keep it.
+- **cv LCP font-preload priority** — tuned 2026-07-14 (`cv@4f78c7b`, LCP
+  1504→1279 ms). The `<head>` preload priorities are now at their useful ceiling
+  for the Lantern model. Further LCP gains would require the exhausted headshot
+  downsize (off) or font subsetting (backlog) — do not re-shuffle these hints.
 - **HerrEmil.com `image-size-responsive` (best-practices stuck at 0.96)** — the
   10 game icons are authored at 128×128, which equals their on-page CSS size.
   Lighthouse's mobile-DPR heuristic wants ~192×192 and scores this audit 0,
@@ -82,6 +116,18 @@ as gate failures; a future run must re-audit to confirm before implementing.
    `icon-legendaryjourney`. All < 3 KB — marginal byte savings.
 6. **HerrEmil.com below-the-fold icons** could take `loading="lazy"` (11 game
    icons; keep the first as the LCP candidate eager).
+7. **cv font subsetting** — the three woff2 are the Google-fonts "latin" subsets
+   (bitter-latin 34 KB, bitter-latin-italic 19 KB, nunito-sans 14 KB = 67 KB, vs
+   the 80 KB font budget). The CV is static text using a bounded glyph set, so a
+   `pyftsubset` pass to the actually-used characters would cut font bytes
+   materially and shave a bit more off LCP (the body font gates the text LCP —
+   see 2026-07-14 fix). **Risk: tofu** if the subset misses a glyph a later CV
+   edit introduces (å ä ö é and PR-link punctuation are already needed). Subset
+   to a safe named range (e.g. Latin-1 + the specific extended chars), NOT an
+   exact-glyph set, and re-verify no tofu by rendering. Pairs naturally with #1
+   (subset → re-hash the outputs via `hash-assets.mjs`).
 
-_(Item 7 — cv missing `<main>` / region — DONE 2026-07-13, see fixes table
-`cv@bd2e009`.)_
+_(Item 7 — cv missing `<main>` / region — DONE 2026-07-13, `cv@bd2e009`.
+ cv LCP font-preload priority — DONE 2026-07-14, `cv@4f78c7b`.
+ Both sites' axe-core surface confirmed fully clean 2026-07-14, incl.
+ WCAG 2.2 AA + best-practice + AAA tags, 0 violations / 0 incomplete.)_
