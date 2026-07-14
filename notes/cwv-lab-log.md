@@ -23,6 +23,7 @@ seo ≥ 0.95, LCP ≤ 1800 ms, CLS ≤ 0.05, TBT ≤ 180 ms, TTI ≤ 2500 ms.
 | 2026-07-14 | HerrEmil.com | accessibility (redundant heading name) | **20 → 0 headings** | Every game `<h2>` wrapped an icon whose `alt` duplicated the visible heading text (`<img alt="Sandpiper">Sandpiper`), so each heading's *accessible name* was the icon alt **concatenated** with the text → announced twice by screen readers ("SandpiperSandpiper") on all 10 games × en+sv = **20 headings**. axe/Lighthouse do **not** flag redundant *present* alt (it's not a WCAG violation), so it survived every prior pass — including the same-day "no actionable gap" note below, which relied on axe/LHCI cleanliness. The icon sits beside its own name → it's decorative: set `alt=""`. Heading accessible name now equals its visible text. |
 | 2026-07-14 | cv | total-byte-weight (font payload) | **95.8 → 86.3 KiB** (EN; SV same, −9.5 KiB / ~10%) | Fonts were **70%** of the page's transfer weight. Each Google "latin" woff2 still carried ~230 glyphs (full Basic Latin + Latin-1 + Latin Extended-A **plus** currency/arrows/math/primes the CV never renders). Re-subset with `pyftsubset` to a future-safe Latin range (`U+0020-017F` + en/em dash, curly quotes, bullet, ellipsis) — covers every glyph both EN + SV use plus any European name Emil could add — keeping **all** layout features + hinting so rendering is byte-identical. Font payload **66848 → 57096 B (−14.6%)** (bitter −12%, bitter-italic −15%, nunito −18%). **Honest scope: this does NOT move LCP.** 40 interleaved Lantern runs (20 base / 20 after) → both median **~1279 ms, Δ +1 ms**; cv's LCP is at a font-byte-independent ~1279 ms floor (see exhausted). The win is real payload/bandwidth (~9.5 KiB less per visitor), not the LCP number. In-place subset (same filenames) — did NOT touch index.html/sv, to stay clear of the concurrent i18n task's HTML edits; the subsetted fonts are now un-hashed and want re-hashing (backlog #1). |
 | 2026-07-14 | HerrEmil.com | dark-mode (`prefers-color-scheme`) | **absent → present, WCAG AA** | Portfolio was light-only. Added a purely additive `@media (prefers-color-scheme: dark)` block to all 3 locales + `color-scheme: light dark`; **light mode byte-identical → zero regression**. Dark palette: bg `#14161a`, text `#e8e6e3` (14.5:1), link `#c4664c` (4.62:1 on bg **and** 3.15:1 vs body text → clears axe `link-in-text-block`, mirroring light's clean no-underline links at 5.22/3.05), selection `#3a3f47`, footer band unchanged (white 6:1). Icons are opaque app-tiles → render fine on dark. axe-core 0 violations light+dark × en/sv/de. |
+| 2026-07-14 | HerrEmil.com | share metadata (OpenGraph / Twitter / JSON-LD) | **absent → complete + valid** | All 3 locale homepages had **zero** social-sharing metadata, so a shared link (Slack / LinkedIn / iMessage / X / Discord) rendered as a bare URL with no preview card. Added per-locale OpenGraph + Twitter-Card tags and a schema.org `Person`/`WebSite` JSON-LD graph, plus a 1200×630 branded OG card (`img/og-card.jpg`, 72 KB: wordmark + tagline + 7 game icons, site red gradient). JSON-LD uses **only on-site facts** (name "Emil Andersson" per the same-domain CV, `hello@herremil.com`, GitHub + LinkedIn from the footer, itch.io; `WebSite.author` → `Person` @id). Head-only, non-rendered tags → **zero visual / CLS / perf impact**. Lighthouse scores `structured-data` as *manual*, so this does **not** move the numeric SEO score (stays 1.00) — the win is real share-preview cards, verified by tag completeness + JSON-LD schema-conformance, not a Lighthouse number. |
 
 Commit: `cv@532c92a`. Verified: full `lighthouse:no-pwa` autorun green
 (perf/a11y/bp/seo all 1.00, LCP 1506 ms, CLS 0, TBT 0), asset-guard PASS,
@@ -112,6 +113,27 @@ icon clash. Contrast math: text 14.5:1, link 4.62:1 on bg + 3.15:1 vs text,
 footer white 6:1 — all ≥ AA. **cv deliberately NOT given dark mode** (it is a
 print/paper A4 document; a dark "sheet of paper" breaks the metaphor + print CSS).
 
+Commit: `HerrEmil.com@8af5ba2`. Verified: targeted metric = share-preview /
+structured-data completeness, **0 → complete** on all 3 locales. Served-DOM
+check over local HTTP: each page exposes the full OG set (type / site_name /
+title / description / url / locale + 2 × locale:alternate / image / image:type /
+image:width=1200 / image:height=630 / image:alt), the Twitter
+`summary_large_image` set (card/title/description/image/image:alt), and exactly
+**1** `application/ld+json` block; per-locale description / url / locale / alt
+all correct (en_US on `/`, sv_SE on `/sv/`, de_DE on `/de/`). JSON-LD parses in
+all three + schema checks pass: `Person.name` "Emil Andersson", `sameAs` ×3
+(github/linkedin/itch.io), `WebSite.author` → `Person` @id, `inLanguage`
+en/sv/de. `og:image` resolves **HTTP 200, image/jpeg, 72786 B, 1200×630**. Gate:
+LHCI autorun (3 runs × 3 URLs) **exit 0**, empty assertion-results — every
+assertion green: perf / a11y / seo **1.00**, best-practices 0.96 (exhausted
+`image-size-responsive`), LCP ~904 ms, CLS 0, TBT 0, TTI ~904 ms — **identical
+to this run's baseline** (which also asserted green), confirming head-only tags
+= zero regression. asset-guard **PASS** (og-card.jpg WARN-unhashed, same as
+every sibling icon — deploy invalidates CloudFront so no caching loss),
+html-validate + stylelint **exit 0** (probed first: `<meta property="og:*">`,
+`<script type="application/ld+json">` all accepted). **cv still has no share
+metadata** (backlog #4) — the natural next target.
+
 ## Exhausted / at-ceiling / intentionally-off — do NOT re-attempt
 
 - **cv LCP is font-*byte*-independent (~1279 ms Lantern floor)** — proven
@@ -189,9 +211,14 @@ as gate failures; a future run must re-audit to confirm before implementing.
    A4 document (paper shadows + `#fff200` header highlight + print CSS); a dark
    "sheet of paper" breaks the metaphor. Do not add dark mode to cv.
 3. **No `theme-color` meta** on either site (mobile browser-chrome polish).
-4. **No JSON-LD / OpenGraph** on either site. A `Person` schema fits both;
-   improves share previews. Note: Lighthouse scores structured-data as
-   *manual*, so this won't move the numeric SEO score.
+4. ~~**No JSON-LD / OpenGraph**~~ — **HerrEmil.com DONE 2026-07-14 (`8af5ba2`)**:
+   per-locale OpenGraph + Twitter Card + schema.org `Person`/`WebSite` JSON-LD on
+   en/sv/de, plus a 1200×630 branded OG card. **cv still open** — same treatment
+   fits (single-page `Person`, one locale pair en/sv, print-doc so a simpler card
+   or reuse the hi-DPI headshot as `og:image`; add `canonical` while there — cv's
+   head has hreflang but no `<link rel=canonical>`). Note: Lighthouse scores
+   structured-data as *manual*, so this won't move the numeric SEO score — the
+   win is share-preview cards.
 5. **HerrEmil.com png-only game icons** (no webp sibling): `icon-sandpiper`,
    `icon-fartgupp`, `icon-OBVIO`, `icon-sandGrains`, `icon-spyFly`,
    `icon-legendaryjourney`. All < 3 KB — marginal byte savings.
