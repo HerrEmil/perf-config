@@ -22,6 +22,7 @@ seo ≥ 0.95, LCP ≤ 1800 ms, CLS ≤ 0.05, TBT ≤ 180 ms, TTI ≤ 2500 ms.
 | 2026-07-14 | cv | LCP (largest-contentful-paint) | **1504 → 1279 ms** (7-run median, −225 ms / ~15%) | LCP element is the intro `<p>` (body text in Nunito Sans), so the body font is the LCP-critical resource. Retuned the four `<head>` preloads: body font `nunito-sans` → `fetchpriority="high"` + listed first (wins bandwidth under Lantern throttling); `bitter-latin-italic` (below-the-fold job titles only) → `fetchpriority="low"` but **kept** as a preload; headshot avif → dropped its `fetchpriority="high"` (it is not the LCP element). FCP unchanged (614→615 ms), CLS 0, all four categories 1.00 — no regression. |
 | 2026-07-14 | HerrEmil.com | accessibility (redundant heading name) | **20 → 0 headings** | Every game `<h2>` wrapped an icon whose `alt` duplicated the visible heading text (`<img alt="Sandpiper">Sandpiper`), so each heading's *accessible name* was the icon alt **concatenated** with the text → announced twice by screen readers ("SandpiperSandpiper") on all 10 games × en+sv = **20 headings**. axe/Lighthouse do **not** flag redundant *present* alt (it's not a WCAG violation), so it survived every prior pass — including the same-day "no actionable gap" note below, which relied on axe/LHCI cleanliness. The icon sits beside its own name → it's decorative: set `alt=""`. Heading accessible name now equals its visible text. |
 | 2026-07-14 | cv | total-byte-weight (font payload) | **95.8 → 86.3 KiB** (EN; SV same, −9.5 KiB / ~10%) | Fonts were **70%** of the page's transfer weight. Each Google "latin" woff2 still carried ~230 glyphs (full Basic Latin + Latin-1 + Latin Extended-A **plus** currency/arrows/math/primes the CV never renders). Re-subset with `pyftsubset` to a future-safe Latin range (`U+0020-017F` + en/em dash, curly quotes, bullet, ellipsis) — covers every glyph both EN + SV use plus any European name Emil could add — keeping **all** layout features + hinting so rendering is byte-identical. Font payload **66848 → 57096 B (−14.6%)** (bitter −12%, bitter-italic −15%, nunito −18%). **Honest scope: this does NOT move LCP.** 40 interleaved Lantern runs (20 base / 20 after) → both median **~1279 ms, Δ +1 ms**; cv's LCP is at a font-byte-independent ~1279 ms floor (see exhausted). The win is real payload/bandwidth (~9.5 KiB less per visitor), not the LCP number. In-place subset (same filenames) — did NOT touch index.html/sv, to stay clear of the concurrent i18n task's HTML edits; the subsetted fonts are now un-hashed and want re-hashing (backlog #1). |
+| 2026-07-14 | HerrEmil.com | dark-mode (`prefers-color-scheme`) | **absent → present, WCAG AA** | Portfolio was light-only. Added a purely additive `@media (prefers-color-scheme: dark)` block to all 3 locales + `color-scheme: light dark`; **light mode byte-identical → zero regression**. Dark palette: bg `#14161a`, text `#e8e6e3` (14.5:1), link `#c4664c` (4.62:1 on bg **and** 3.15:1 vs body text → clears axe `link-in-text-block`, mirroring light's clean no-underline links at 5.22/3.05), selection `#3a3f47`, footer band unchanged (white 6:1). Icons are opaque app-tiles → render fine on dark. axe-core 0 violations light+dark × en/sv/de. |
 
 Commit: `cv@532c92a`. Verified: full `lighthouse:no-pwa` autorun green
 (perf/a11y/bp/seo all 1.00, LCP 1506 ms, CLS 0, TBT 0), asset-guard PASS,
@@ -94,6 +95,23 @@ pre-i18n run too), not a font effect. **Kept the subset future-safe** (whole
 Latin range, not exact-glyph) per the standing tofu caution. Committed **only**
 `fonts/*.woff2` by explicit path — the concurrent i18n task owns index.html.
 
+Commit: `HerrEmil.com@89d207e`. Verified: dark-mode support added to all three
+locales as an additive `@media (prefers-color-scheme: dark)` block (+
+`color-scheme: light dark`); **light-mode CSS byte-identical**, so the passing
+gate is untouched. axe-core 4.12.1 in real Chrome (Playwright `colorScheme`
+emulation) over `wcag2a/2aa, wcag21a/aa, wcag22aa, best-practice`: **0
+violations / 33 passes / 0 incomplete** on en+sv+de in **both** light and dark —
+incl. `color-contrast` and `link-in-text-block`. Computed styles confirmed the
+dark palette actually applied (html bg #14161a, text #e8e6e3, link #c4664c,
+color-scheme "light dark"). LHCI autorun (3 runs × 3 URLs) **exit 0**, every
+assertion green (perf/a11y/seo 1.00, bp 0.96 — the exhausted `image-size-
+responsive` ceiling; LCP ~904 ms, CLS 0, TBT 0 — identical to baseline).
+asset-guard PASS, html-validate + stylelint exit 0. Visual pass (full-page
+screenshots, both schemes): light pixel-unchanged; dark clean + readable, no
+icon clash. Contrast math: text 14.5:1, link 4.62:1 on bg + 3.15:1 vs text,
+footer white 6:1 — all ≥ AA. **cv deliberately NOT given dark mode** (it is a
+print/paper A4 document; a dark "sheet of paper" breaks the metaphor + print CSS).
+
 ## Exhausted / at-ceiling / intentionally-off — do NOT re-attempt
 
 - **cv LCP is font-*byte*-independent (~1279 ms Lantern floor)** — proven
@@ -153,9 +171,23 @@ as gate failures; a future run must re-audit to confirm before implementing.
    edits index.html **and** `sv/index.html` (`../fonts/…` refs) — `hash-assets.mjs`
    rewrites both, but coordinate with the concurrent i18n task to avoid an
    index.html collision (or do it when cv's tree is quiet).
-2. **No dark-mode support** — HerrEmil.com is `color-scheme: light` only; cv uses
-   fixed light colors. Contrast passes, so not an a11y *failure*, but a real gap.
-   Risk: a dark palette must re-clear contrast on the yellow (#fff200) accents.
+   **⚠ Reassessed 2026-07-14 — near-zero real-world value as-is; deprioritised.**
+   Both sites' `deploy.yml` does a plain `aws s3 sync` with **no `Cache-Control`**
+   headers AND a CloudFront `/*` invalidation on **every** deploy — so browsers
+   never hold these assets long-term and edge staleness is already flushed each
+   push. Content-hashing would therefore only silence the asset-guard WARN, not
+   buy a real caching win, until immutable cache headers exist. Also a landmine:
+   `hash-assets.mjs`'s `HASHED` regex wants `{10}` hex but cv's headshots are
+   `{8}`-hex, so running the tool on cv `.` would **double-hash the headshots**.
+   If ever pursued: (a) first add long-max-age `immutable` headers for hashed
+   assets + short TTL for HTML in `deploy.yml` (that's the actual win), and
+   (b) hash the fonts by hand / fix the `{10}`→`{8,}` regex — never run the tool
+   blindly on cv.
+2. ~~**No dark-mode support**~~ — **HerrEmil.com DONE 2026-07-14 (`89d207e`)**:
+   additive `@media (prefers-color-scheme: dark)` on all 3 locales, axe-clean in
+   dark, light untouched. **cv intentionally left light** — it is a print/paper
+   A4 document (paper shadows + `#fff200` header highlight + print CSS); a dark
+   "sheet of paper" breaks the metaphor. Do not add dark mode to cv.
 3. **No `theme-color` meta** on either site (mobile browser-chrome polish).
 4. **No JSON-LD / OpenGraph** on either site. A `Person` schema fits both;
    improves share previews. Note: Lighthouse scores structured-data as
