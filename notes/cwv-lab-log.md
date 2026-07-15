@@ -24,6 +24,7 @@ seo ≥ 0.95, LCP ≤ 1800 ms, CLS ≤ 0.05, TBT ≤ 180 ms, TTI ≤ 2500 ms.
 | 2026-07-14 | cv | total-byte-weight (font payload) | **95.8 → 86.3 KiB** (EN; SV same, −9.5 KiB / ~10%) | Fonts were **70%** of the page's transfer weight. Each Google "latin" woff2 still carried ~230 glyphs (full Basic Latin + Latin-1 + Latin Extended-A **plus** currency/arrows/math/primes the CV never renders). Re-subset with `pyftsubset` to a future-safe Latin range (`U+0020-017F` + en/em dash, curly quotes, bullet, ellipsis) — covers every glyph both EN + SV use plus any European name Emil could add — keeping **all** layout features + hinting so rendering is byte-identical. Font payload **66848 → 57096 B (−14.6%)** (bitter −12%, bitter-italic −15%, nunito −18%). **Honest scope: this does NOT move LCP.** 40 interleaved Lantern runs (20 base / 20 after) → both median **~1279 ms, Δ +1 ms**; cv's LCP is at a font-byte-independent ~1279 ms floor (see exhausted). The win is real payload/bandwidth (~9.5 KiB less per visitor), not the LCP number. In-place subset (same filenames) — did NOT touch index.html/sv, to stay clear of the concurrent i18n task's HTML edits; the subsetted fonts are now un-hashed and want re-hashing (backlog #1). |
 | 2026-07-14 | HerrEmil.com | dark-mode (`prefers-color-scheme`) | **absent → present, WCAG AA** | Portfolio was light-only. Added a purely additive `@media (prefers-color-scheme: dark)` block to all 3 locales + `color-scheme: light dark`; **light mode byte-identical → zero regression**. Dark palette: bg `#14161a`, text `#e8e6e3` (14.5:1), link `#c4664c` (4.62:1 on bg **and** 3.15:1 vs body text → clears axe `link-in-text-block`, mirroring light's clean no-underline links at 5.22/3.05), selection `#3a3f47`, footer band unchanged (white 6:1). Icons are opaque app-tiles → render fine on dark. axe-core 0 violations light+dark × en/sv/de. |
 | 2026-07-14 | HerrEmil.com | share metadata (OpenGraph / Twitter / JSON-LD) | **absent → complete + valid** | All 3 locale homepages had **zero** social-sharing metadata, so a shared link (Slack / LinkedIn / iMessage / X / Discord) rendered as a bare URL with no preview card. Added per-locale OpenGraph + Twitter-Card tags and a schema.org `Person`/`WebSite` JSON-LD graph, plus a 1200×630 branded OG card (`img/og-card.jpg`, 72 KB: wordmark + tagline + 7 game icons, site red gradient). JSON-LD uses **only on-site facts** (name "Emil Andersson" per the same-domain CV, `hello@herremil.com`, GitHub + LinkedIn from the footer, itch.io; `WebSite.author` → `Person` @id). Head-only, non-rendered tags → **zero visual / CLS / perf impact**. Lighthouse scores `structured-data` as *manual*, so this does **not** move the numeric SEO score (stays 1.00) — the win is real share-preview cards, verified by tag completeness + JSON-LD schema-conformance, not a Lighthouse number. |
+| 2026-07-15 | cv | share metadata (OpenGraph / Twitter / JSON-LD) + canonical | **absent → complete + valid (en/sv/de)** | cv had **zero** social-sharing metadata and **no** `<link rel=canonical>` (only hreflang) — a shared CV link rendered as a bare URL. Added per-locale OpenGraph (`og:type=profile` + `profile:first/last_name`), Twitter `summary_large_image`, and a schema.org `Person`/`ProfilePage` JSON-LD graph across **all three** locales (en/sv/de — the `de` locale landed mid-run via a concurrent i18n task, `cv@c4feb8a`), plus a purpose-built 1200×630 `img/og-card.jpg` (56 KB, on-brand: Bitter uppercase name, `#fff200` accent bar, real headshot on the CV's paper aesthetic). The `Person` node reuses the site-wide `@id` `https://herremil.com/#emil` (same entity as HerrEmil.com's JSON-LD), enriched with `jobTitle`/`worksFor`/`address` from on-CV facts; `ProfilePage.mainEntity` → that Person. Head-only, non-rendered → **zero visual / CLS / perf impact**. Lighthouse scores structured-data as *manual*, so this does **not** move the numeric SEO score (stays 1.00) — the win is real share-preview cards + a canonical tag cv lacked. Brings cv to share-card parity with HerrEmil.com. |
 
 Commit: `cv@532c92a`. Verified: full `lighthouse:no-pwa` autorun green
 (perf/a11y/bp/seo all 1.00, LCP 1506 ms, CLS 0, TBT 0), asset-guard PASS,
@@ -134,6 +135,43 @@ html-validate + stylelint **exit 0** (probed first: `<meta property="og:*">`,
 `<script type="application/ld+json">` all accepted). **cv still has no share
 metadata** (backlog #4) — the natural next target.
 
+Commit: `cv@ff1c28a`. Verified: targeted metric = share-preview / structured-data
+completeness, **0 → complete** on **all three** locales (en/sv/de). Served-DOM
+check over local HTTP: each page exposes a per-locale `<link rel=canonical>`, the
+full OG set (**13** `og:*` tags incl. `type=profile`, `site_name`, `title`,
+`description`, `url`, `locale` + 2× `locale:alternate`, `image` / `image:type` /
+`image:width=1200` / `image:height=630` / `image:alt`), `profile:first_name` /
+`last_name`, the Twitter `summary_large_image` set (**5**), and exactly **1**
+`application/ld+json` block that `JSON.parse`s to a `Person`+`ProfilePage` graph
+with correct `inLanguage` (en/sv/de) and per-locale `ProfilePage.url` + `og:url` +
+`og:locale` + canonical. `og:image` resolves **HTTP 200, image/jpeg, 56042 B,
+1200×630** on the exact referenced path from all three pages. Head-only proof: all
+three `<body>` elements **byte-identical to HEAD**, every added line a `meta` /
+`link` / `twitter` / `json-ld` / comment tag → zero render/CLS impact. Gate: LHCI
+autorun (3 URLs × 3 runs) **exit 0**, every assertion green — perf/a11y/bp/seo
+**1.00**, LCP 1279–1281 ms (baseline 1279 — within noise), CLS 0, TBT 0, TTI ≤
+1289 ms — **no regression** vs this run's baseline (also green). asset-guard
+**PASS** (og-card.jpg WARN-unhashed, same as HerrEmil.com's og-card + the fonts —
+deploy invalidates CloudFront so no caching loss), html-validate + stylelint
+**exit 0**. Committed **only** my four files by explicit path (3 HTML +
+`img/og-card.jpg`).
+
+**Concurrency note (2026-07-15).** Picked cv share metadata as the biggest
+not-yet-logged item, but a concurrent i18n burn task was mid-flight adding a `de`
+locale (uncommitted edits to index.html / sv / lighthouserc / sitemap + a new
+`de/`). Rather than sweep its half-done work into my commit, I backed out my
+initial en-only edits; while I regrouped the i18n task committed + pushed
+`cv@c4feb8a`. cv then went quiet, so I re-pulled and redid the metadata cleanly
+across **all three** locales. Lesson for shared-checkout collisions: back out and
+re-pull — and note the peer's commit may *expand* your scope (2 → 3 locales here),
+not just unblock it.
+
+**HerrEmil.com — no new scored gap this run (2026-07-15 baseline).** Re-audited
+all 3 locales (LHCI): perf/a11y/seo **1.00**, best-practices **0.96** (only the
+exhausted `image-size-responsive`), LCP ~904 ms, CLS 0, TBT 0. No un-logged
+CWV/a11y gap; the only remaining shared item is `theme-color` (backlog #3), now
+the natural next target for both sites.
+
 ## Exhausted / at-ceiling / intentionally-off — do NOT re-attempt
 
 - **cv LCP is font-*byte*-independent (~1279 ms Lantern floor)** — proven
@@ -211,14 +249,14 @@ as gate failures; a future run must re-audit to confirm before implementing.
    A4 document (paper shadows + `#fff200` header highlight + print CSS); a dark
    "sheet of paper" breaks the metaphor. Do not add dark mode to cv.
 3. **No `theme-color` meta** on either site (mobile browser-chrome polish).
-4. ~~**No JSON-LD / OpenGraph**~~ — **HerrEmil.com DONE 2026-07-14 (`8af5ba2`)**:
-   per-locale OpenGraph + Twitter Card + schema.org `Person`/`WebSite` JSON-LD on
-   en/sv/de, plus a 1200×630 branded OG card. **cv still open** — same treatment
-   fits (single-page `Person`, one locale pair en/sv, print-doc so a simpler card
-   or reuse the hi-DPI headshot as `og:image`; add `canonical` while there — cv's
-   head has hreflang but no `<link rel=canonical>`). Note: Lighthouse scores
-   structured-data as *manual*, so this won't move the numeric SEO score — the
-   win is share-preview cards.
+4. ~~**No JSON-LD / OpenGraph**~~ — **BOTH DONE.** HerrEmil.com 2026-07-14
+   (`8af5ba2`): per-locale OpenGraph + Twitter Card + `Person`/`WebSite` JSON-LD +
+   1200×630 OG card. **cv DONE 2026-07-15 (`ff1c28a`)**: per-locale OG
+   (`og:type=profile`) + Twitter + `Person`/`ProfilePage` JSON-LD + `canonical`
+   across **en/sv/de** + a 1200×630 `img/og-card.jpg`; cv's `Person` reuses the
+   shared `@id` `https://herremil.com/#emil`. Note: Lighthouse scores structured-
+   data as *manual*, so this didn't move the numeric SEO score — the win is
+   share-preview cards.
 5. **HerrEmil.com png-only game icons** (no webp sibling): `icon-sandpiper`,
    `icon-fartgupp`, `icon-OBVIO`, `icon-sandGrains`, `icon-spyFly`,
    `icon-legendaryjourney`. All < 3 KB — marginal byte savings.
