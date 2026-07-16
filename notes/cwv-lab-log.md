@@ -25,6 +25,7 @@ seo ≥ 0.95, LCP ≤ 1800 ms, CLS ≤ 0.05, TBT ≤ 180 ms, TTI ≤ 2500 ms.
 | 2026-07-14 | HerrEmil.com | dark-mode (`prefers-color-scheme`) | **absent → present, WCAG AA** | Portfolio was light-only. Added a purely additive `@media (prefers-color-scheme: dark)` block to all 3 locales + `color-scheme: light dark`; **light mode byte-identical → zero regression**. Dark palette: bg `#14161a`, text `#e8e6e3` (14.5:1), link `#c4664c` (4.62:1 on bg **and** 3.15:1 vs body text → clears axe `link-in-text-block`, mirroring light's clean no-underline links at 5.22/3.05), selection `#3a3f47`, footer band unchanged (white 6:1). Icons are opaque app-tiles → render fine on dark. axe-core 0 violations light+dark × en/sv/de. |
 | 2026-07-14 | HerrEmil.com | share metadata (OpenGraph / Twitter / JSON-LD) | **absent → complete + valid** | All 3 locale homepages had **zero** social-sharing metadata, so a shared link (Slack / LinkedIn / iMessage / X / Discord) rendered as a bare URL with no preview card. Added per-locale OpenGraph + Twitter-Card tags and a schema.org `Person`/`WebSite` JSON-LD graph, plus a 1200×630 branded OG card (`img/og-card.jpg`, 72 KB: wordmark + tagline + 7 game icons, site red gradient). JSON-LD uses **only on-site facts** (name "Emil Andersson" per the same-domain CV, `hello@herremil.com`, GitHub + LinkedIn from the footer, itch.io; `WebSite.author` → `Person` @id). Head-only, non-rendered tags → **zero visual / CLS / perf impact**. Lighthouse scores `structured-data` as *manual*, so this does **not** move the numeric SEO score (stays 1.00) — the win is real share-preview cards, verified by tag completeness + JSON-LD schema-conformance, not a Lighthouse number. |
 | 2026-07-15 | cv | share metadata (OpenGraph / Twitter / JSON-LD) + canonical | **absent → complete + valid (en/sv/de)** | cv had **zero** social-sharing metadata and **no** `<link rel=canonical>` (only hreflang) — a shared CV link rendered as a bare URL. Added per-locale OpenGraph (`og:type=profile` + `profile:first/last_name`), Twitter `summary_large_image`, and a schema.org `Person`/`ProfilePage` JSON-LD graph across **all three** locales (en/sv/de — the `de` locale landed mid-run via a concurrent i18n task, `cv@c4feb8a`), plus a purpose-built 1200×630 `img/og-card.jpg` (56 KB, on-brand: Bitter uppercase name, `#fff200` accent bar, real headshot on the CV's paper aesthetic). The `Person` node reuses the site-wide `@id` `https://herremil.com/#emil` (same entity as HerrEmil.com's JSON-LD), enriched with `jobTitle`/`worksFor`/`address` from on-CV facts; `ProfilePage.mainEntity` → that Person. Head-only, non-rendered → **zero visual / CLS / perf impact**. Lighthouse scores structured-data as *manual*, so this does **not** move the numeric SEO score (stays 1.00) — the win is real share-preview cards + a canonical tag cv lacked. Brings cv to share-card parity with HerrEmil.com. |
+| 2026-07-16 | HerrEmil.com | mobile browser-chrome (`theme-color`) | **absent → present (light + dark), all 4 pages** | No page declared a `theme-color`, so mobile Chrome/Safari painted the address bar a default grey/white regardless of scheme. Added a light + dark `theme-color` pair to all four pages (en/sv/de + 404), each matched to the **exact rendered `<html>` background** per scheme (`#ffffff` light, `#14161a` dark) so the browser chrome blends seamlessly with the page top in both. 404 had **no dark-mode CSS** (rendered white even in dark mode → would clash with its new dark theme-color), so it also received the index locales' `color-scheme:light dark` + `@media(prefers-color-scheme:dark)` block (text #e8e6e3 14.5:1, link #c4664c 4.62:1 on #14161a) — the whole site is now dark-consistent. Head-only metas + additive CSS → **light mode byte-identical, zero CLS/perf impact**. Lighthouse does **not** score `theme-color` under the `no-pwa` preset (`themed-omnibox` is a PWA audit), so this doesn't move a numeric score — like dark mode / share cards, the win is real mobile-chrome polish + a now-consistent dark 404. |
 
 Commit: `cv@532c92a`. Verified: full `lighthouse:no-pwa` autorun green
 (perf/a11y/bp/seo all 1.00, LCP 1506 ms, CLS 0, TBT 0), asset-guard PASS,
@@ -172,6 +173,23 @@ exhausted `image-size-responsive`), LCP ~904 ms, CLS 0, TBT 0. No un-logged
 CWV/a11y gap; the only remaining shared item is `theme-color` (backlog #3), now
 the natural next target for both sites.
 
+Commit: `HerrEmil.com@7ef6f01`. Verified: targeted metric = `theme-color`
+presence + chrome/background match, **absent → present + seamless** on all 4
+pages. Real-Chrome (Playwright) computed-style check per scheme: each page
+exposes exactly **2** `theme-color` metas (`#ffffff` light / `#14161a` dark),
+and the rendered effective background **equals the declared color** in that
+scheme — light `#ffffff`, dark `#14161a` — on `/`, `/sv`, `/de` **and** `/404`
+(404's `color-scheme` went `normal → light dark`; its dark bg is now `#14161a`,
+previously white). axe-core 4.10 **0 violations** on all 4 pages × light+dark;
+404 dark contrast text 14.5:1 / link #c4664c 4.62:1 / link-vs-text 3.15:1 (all
+≥ AA). Baseline this run (pre-edit LHCI) and after were both green and
+**identical**: perf/a11y/seo **1.00**, bp 0.96 (exhausted `image-size-
+responsive`), LCP 0.9 s, CLS 0, TBT 0 — head-only tags = zero regression. Gate:
+LHCI autorun (3 URLs × 3 runs) **exit 0**; asset-guard **PASS**; html-validate
++ stylelint **exit 0** (`<meta name="theme-color" media="…">` accepted).
+Committed **only** the 4 HTML files by explicit path; `.lighthouseci/` output
+removed, never staged.
+
 ## Exhausted / at-ceiling / intentionally-off — do NOT re-attempt
 
 - **cv LCP is font-*byte*-independent (~1279 ms Lantern floor)** — proven
@@ -248,7 +266,16 @@ as gate failures; a future run must re-audit to confirm before implementing.
    dark, light untouched. **cv intentionally left light** — it is a print/paper
    A4 document (paper shadows + `#fff200` header highlight + print CSS); a dark
    "sheet of paper" breaks the metaphor. Do not add dark mode to cv.
-3. **No `theme-color` meta** on either site (mobile browser-chrome polish).
+3. ~~**No `theme-color` meta**~~ — **HerrEmil.com DONE 2026-07-16 (`7ef6f01`)**:
+   light + dark `theme-color` on all 4 pages, each matched to the rendered
+   `<html>` background per scheme (`#ffffff` / `#14161a`); 404 also brought to
+   dark-mode parity so its chrome matches. **cv still pending** and is the
+   natural next target, but a *smaller* one: cv is a print/paper A4 doc with
+   **no dark mode by design** (see exhausted note), so give it a **single**
+   light `theme-color` matching its on-screen top background (white on mobile;
+   the `.a4` sheet is white, the ≥793 px body frame is `lightgrey`) — do **not**
+   add a dark variant. Lower real-world impact than the portfolio (cv is mostly
+   viewed on desktop / saved as PDF).
 4. ~~**No JSON-LD / OpenGraph**~~ — **BOTH DONE.** HerrEmil.com 2026-07-14
    (`8af5ba2`): per-locale OpenGraph + Twitter Card + `Person`/`WebSite` JSON-LD +
    1200×630 OG card. **cv DONE 2026-07-15 (`ff1c28a`)**: per-locale OG
