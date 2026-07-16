@@ -26,6 +26,7 @@ seo ≥ 0.95, LCP ≤ 1800 ms, CLS ≤ 0.05, TBT ≤ 180 ms, TTI ≤ 2500 ms.
 | 2026-07-14 | HerrEmil.com | share metadata (OpenGraph / Twitter / JSON-LD) | **absent → complete + valid** | All 3 locale homepages had **zero** social-sharing metadata, so a shared link (Slack / LinkedIn / iMessage / X / Discord) rendered as a bare URL with no preview card. Added per-locale OpenGraph + Twitter-Card tags and a schema.org `Person`/`WebSite` JSON-LD graph, plus a 1200×630 branded OG card (`img/og-card.jpg`, 72 KB: wordmark + tagline + 7 game icons, site red gradient). JSON-LD uses **only on-site facts** (name "Emil Andersson" per the same-domain CV, `hello@herremil.com`, GitHub + LinkedIn from the footer, itch.io; `WebSite.author` → `Person` @id). Head-only, non-rendered tags → **zero visual / CLS / perf impact**. Lighthouse scores `structured-data` as *manual*, so this does **not** move the numeric SEO score (stays 1.00) — the win is real share-preview cards, verified by tag completeness + JSON-LD schema-conformance, not a Lighthouse number. |
 | 2026-07-15 | cv | share metadata (OpenGraph / Twitter / JSON-LD) + canonical | **absent → complete + valid (en/sv/de)** | cv had **zero** social-sharing metadata and **no** `<link rel=canonical>` (only hreflang) — a shared CV link rendered as a bare URL. Added per-locale OpenGraph (`og:type=profile` + `profile:first/last_name`), Twitter `summary_large_image`, and a schema.org `Person`/`ProfilePage` JSON-LD graph across **all three** locales (en/sv/de — the `de` locale landed mid-run via a concurrent i18n task, `cv@c4feb8a`), plus a purpose-built 1200×630 `img/og-card.jpg` (56 KB, on-brand: Bitter uppercase name, `#fff200` accent bar, real headshot on the CV's paper aesthetic). The `Person` node reuses the site-wide `@id` `https://herremil.com/#emil` (same entity as HerrEmil.com's JSON-LD), enriched with `jobTitle`/`worksFor`/`address` from on-CV facts; `ProfilePage.mainEntity` → that Person. Head-only, non-rendered → **zero visual / CLS / perf impact**. Lighthouse scores structured-data as *manual*, so this does **not** move the numeric SEO score (stays 1.00) — the win is real share-preview cards + a canonical tag cv lacked. Brings cv to share-card parity with HerrEmil.com. |
 | 2026-07-16 | HerrEmil.com | mobile browser-chrome (`theme-color`) | **absent → present (light + dark), all 4 pages** | No page declared a `theme-color`, so mobile Chrome/Safari painted the address bar a default grey/white regardless of scheme. Added a light + dark `theme-color` pair to all four pages (en/sv/de + 404), each matched to the **exact rendered `<html>` background** per scheme (`#ffffff` light, `#14161a` dark) so the browser chrome blends seamlessly with the page top in both. 404 had **no dark-mode CSS** (rendered white even in dark mode → would clash with its new dark theme-color), so it also received the index locales' `color-scheme:light dark` + `@media(prefers-color-scheme:dark)` block (text #e8e6e3 14.5:1, link #c4664c 4.62:1 on #14161a) — the whole site is now dark-consistent. Head-only metas + additive CSS → **light mode byte-identical, zero CLS/perf impact**. Lighthouse does **not** score `theme-color` under the `no-pwa` preset (`themed-omnibox` is a PWA audit), so this doesn't move a numeric score — like dark mode / share cards, the win is real mobile-chrome polish + a now-consistent dark 404. |
+| 2026-07-16 | cv | mobile browser-chrome (`theme-color`) | **absent → present (single light `#ffffff`, all 4 locales)** | cv declared no `theme-color`, so mobile Chrome/Safari painted the address bar a default grey/white. Unlike HerrEmil.com (which got a light **+** dark pair), cv is an intentionally light-only paper/print document — **no dark mode**, no `color-scheme` opt-in → it renders white in *every* scheme — so it gets a **single unconditional** `#ffffff` (no `media` attr) that keeps the chrome matched to the white page top in both light and dark; a dark variant would be wrong here. Applied to **all four** locales (en/sv/de/fr — `fr` landed this same run via a concurrent i18n task, `cv@3edefab`, expanding scope 3 → 4). Head-only meta → zero visual/CLS/perf impact. Brings cv to mobile-chrome parity with HerrEmil.com (`7ef6f01`). Lighthouse doesn't score `theme-color` under `no-pwa` (`themed-omnibox` is a PWA audit), so no numeric move — the win is real mobile-chrome polish, verified by presence + rendered-bg match. |
 
 Commit: `cv@532c92a`. Verified: full `lighthouse:no-pwa` autorun green
 (perf/a11y/bp/seo all 1.00, LCP 1506 ms, CLS 0, TBT 0), asset-guard PASS,
@@ -190,6 +191,34 @@ LHCI autorun (3 URLs × 3 runs) **exit 0**; asset-guard **PASS**; html-validate
 Committed **only** the 4 HTML files by explicit path; `.lighthouseci/` output
 removed, never staged.
 
+Commit: `cv@2dd4504`. Verified: targeted metric = `theme-color` presence +
+chrome/background match, **absent → present** on all 4 locales. Real-Chrome
+(Playwright, 375×812 mobile) DOM check: each locale exposes exactly **1**
+`theme-color` meta = `#ffffff` with **no** `media` attr (unconditional). Rendered
+scheme-independence proven: `getComputedStyle(html).colorScheme` = **normal**, no
+`@media(prefers-color-scheme:dark)` rule in the sheet (`hasDarkMediaRule:false`),
+and html / body / top-`nav` backgrounds all transparent over the default **white**
+canvas → the effective page-top background is white in *every* OS scheme (Chrome
+only darkens the canvas when a page opts into `color-scheme:dark`), which the
+unconditional `#ffffff` chrome matches. Gate: LHCI autorun (**4** URLs × 3 runs)
+**exit 0**, every assertion green — all four locales perf/a11y/bp/seo **1.00**,
+LCP 1278–1285 ms, CLS 0, TBT 0, TTI ≤ 1292 ms — **identical to this run's
+baseline** (pre-edit LHCI also green) → head-only meta = zero regression.
+asset-guard **PASS** (fonts + og-card WARN-unhashed, unchanged), html-validate
+**exit 0**, no standalone CSS for stylelint. Committed **only** the 4 index.html
+by explicit path (`.lighthouseci/` is gitignored). This was the last remaining
+not-yet-logged manual-pass item shared with HerrEmil.com; both sites now have
+`theme-color`.
+
+**Both sites confirmed fully at-ceiling this run (2026-07-16).** Fresh single-run
+audits before picking a target: HerrEmil.com homepage perf **1.00** / LCP 913 ms
+(intro `<p>`, system font) / total page **27 KiB** / `offscreen-images` **1** (0
+items) / `modern-image-formats` **1**; cv perf/a11y/bp/seo **1.00** / LCP 1282 ms,
+its only sub-1.0 audit being the deliberately-off `uses-responsive-images` (the
+exhausted hi-DPI headshot). No scored/measurable CWV or a11y gap remained on
+either site — the theme-color polish above was the biggest genuine not-yet-logged
+item.
+
 ## Exhausted / at-ceiling / intentionally-off — do NOT re-attempt
 
 - **cv LCP is font-*byte*-independent (~1279 ms Lantern floor)** — proven
@@ -233,6 +262,24 @@ removed, never staged.
   set at 2× (no source) or shrinking the on-page design — both out of scope.
   Upscaling 128→256 is metric-gaming (more bytes, no real detail) — do NOT.
   **Accepted at BP 0.96.**
+- **HerrEmil.com image loading (webp siblings / `loading="lazy"`) — no measurable
+  gap; do NOT pursue (backlog #5/#6 RETIRED).** Measured 2026-07-16: the homepage
+  is **27 KiB total**, LCP 913 ms, `offscreen-images` score **1** (0 items),
+  `modern-image-formats` score **1** — Lighthouse sees nothing to defer or
+  re-encode. Test-encoding the 6 png-only icons to webp (best of lossless / q90)
+  saved only **~1.5 KiB across the entire icon set** (9815 → 8336 B); the smallest
+  icons barely beat png (sandpiper 675→538, legendaryjourney 1028→906) and spyFly
+  only wins via **lossy** q90 (473 B, a quality risk on a portfolio icon).
+  Lazy-loading ~10 tiny icons on a sub-1 s / 27 KiB page moves no metric. Both are
+  padding / metric-shaving on an already-at-ceiling page — **declined**.
+- **cv multiple `<h1>` (name + 4 section headers on one page) — considered,
+  declined 2026-07-16.** Not an axe/Lighthouse violation: `heading-order` **passes**
+  (same-level, no skipped level) and no rule forbids multiple `<h1>`. Demoting the
+  section headers to `<h2>` / job titles to `<h3>` would cascade a CSS restructure
+  — the `#fff200` section-highlight + Bitter-italic styling key off the current
+  levels — across the shared inline `<style>` + all 4 locale files (the i18n task's
+  territory), risking visual/print/PDF regression for a debatable, **unscored**
+  semantic gain. Reward < risk; leave as-is.
 
 ## Candidate backlog (unverified — re-audit before acting)
 
@@ -266,16 +313,14 @@ as gate failures; a future run must re-audit to confirm before implementing.
    dark, light untouched. **cv intentionally left light** — it is a print/paper
    A4 document (paper shadows + `#fff200` header highlight + print CSS); a dark
    "sheet of paper" breaks the metaphor. Do not add dark mode to cv.
-3. ~~**No `theme-color` meta**~~ — **HerrEmil.com DONE 2026-07-16 (`7ef6f01`)**:
-   light + dark `theme-color` on all 4 pages, each matched to the rendered
-   `<html>` background per scheme (`#ffffff` / `#14161a`); 404 also brought to
-   dark-mode parity so its chrome matches. **cv still pending** and is the
-   natural next target, but a *smaller* one: cv is a print/paper A4 doc with
-   **no dark mode by design** (see exhausted note), so give it a **single**
-   light `theme-color` matching its on-screen top background (white on mobile;
-   the `.a4` sheet is white, the ≥793 px body frame is `lightgrey`) — do **not**
-   add a dark variant. Lower real-world impact than the portfolio (cv is mostly
-   viewed on desktop / saved as PDF).
+3. ~~**No `theme-color` meta**~~ — **BOTH DONE.** HerrEmil.com 2026-07-16
+   (`7ef6f01`): light + dark `theme-color` on all 4 pages, each matched to the
+   rendered `<html>` background per scheme (`#ffffff` / `#14161a`); 404 also
+   brought to dark-mode parity. **cv DONE 2026-07-16 (`2dd4504`)**: a **single
+   unconditional** `#ffffff` (no `media` attr) on all 4 locales (en/sv/de/fr) —
+   cv is a light-only paper/A4 doc with **no dark mode by design**, renders white
+   in every scheme, so one white chrome is correct and a dark variant would be
+   wrong. Both sites now at `theme-color` parity.
 4. ~~**No JSON-LD / OpenGraph**~~ — **BOTH DONE.** HerrEmil.com 2026-07-14
    (`8af5ba2`): per-locale OpenGraph + Twitter Card + `Person`/`WebSite` JSON-LD +
    1200×630 OG card. **cv DONE 2026-07-15 (`ff1c28a`)**: per-locale OG
@@ -284,11 +329,13 @@ as gate failures; a future run must re-audit to confirm before implementing.
    shared `@id` `https://herremil.com/#emil`. Note: Lighthouse scores structured-
    data as *manual*, so this didn't move the numeric SEO score — the win is
    share-preview cards.
-5. **HerrEmil.com png-only game icons** (no webp sibling): `icon-sandpiper`,
-   `icon-fartgupp`, `icon-OBVIO`, `icon-sandGrains`, `icon-spyFly`,
-   `icon-legendaryjourney`. All < 3 KB — marginal byte savings.
-6. **HerrEmil.com below-the-fold icons** could take `loading="lazy"` (11 game
-   icons; keep the first as the LCP candidate eager).
+5. ~~**HerrEmil.com png-only game icons** (no webp sibling)~~ — **RETIRED
+   2026-07-16.** Measured: webp saves only ~1.5 KiB across the whole icon set and
+   some icons need lossy encoding to beat png. Metric-shaving on a 27 KiB page —
+   see the exhausted-list entry.
+6. ~~**HerrEmil.com below-the-fold icons `loading="lazy"`**~~ — **RETIRED
+   2026-07-16.** `offscreen-images` already scores 1 (0 items) on the 27 KiB /
+   sub-1 s homepage; deferring tiny icons moves no metric — see exhausted list.
 7. ~~**cv font subsetting**~~ — **DONE 2026-07-14, `cv@6ff5d89`.** Subset all
    three woff2 to a future-safe whole-Latin range (`U+0020-017F` + typographic
    punctuation), −14.6 % font payload (66848 → 57096 B), no tofu. Byte-weight
