@@ -11,6 +11,19 @@ each site's own `lighthouserc.json`, plus `asset-guard.sh`, `html-validate`,
 `stylelint`. Gate thresholds: perf ≥ 0.92, a11y = 1.0, best-practices ≥ 0.95,
 seo ≥ 0.95, LCP ≤ 1800 ms, CLS ≤ 0.05, TBT ≤ 180 ms, TTI ≤ 2500 ms.
 
+> **⏹ WIND-DOWN STATUS (2026-07-16).** The sanctioned wind-down backlog is now
+> **fully closed**: (1) cv `theme-color` DONE, (2) HerrEmil.com icon lazy/webp
+> RETIRED (no measurable gap), (3) FINAL substantive item — **Cache-Control
+> headers — DONE this run** (both sites, verified live). Both sites are at the
+> Lighthouse ceiling. The one remaining lever, content-hashing cv fonts
+> (backlog #1b), is cache-only, moves no metric, and is explicitly out of scope
+> — **do NOT pick it up.**
+> **➡ NEXT RUN:** run a fresh audit of both sites to confirm zero not-yet-logged
+> sub-ceiling items, then execute the spec's EXHAUSTION RULE — append a
+> `LAB EXHAUSTED <date>` entry, push it, disable `burn-perf-cwv-lab` via the
+> scheduled-tasks MCP (`enabled:false`), and post one osascript banner. A run
+> that audits, finds nothing, and self-disables is a SUCCESS.
+
 ## Fixes applied
 
 | Date | Site | Metric | Before → After | Change |
@@ -27,6 +40,8 @@ seo ≥ 0.95, LCP ≤ 1800 ms, CLS ≤ 0.05, TBT ≤ 180 ms, TTI ≤ 2500 ms.
 | 2026-07-15 | cv | share metadata (OpenGraph / Twitter / JSON-LD) + canonical | **absent → complete + valid (en/sv/de)** | cv had **zero** social-sharing metadata and **no** `<link rel=canonical>` (only hreflang) — a shared CV link rendered as a bare URL. Added per-locale OpenGraph (`og:type=profile` + `profile:first/last_name`), Twitter `summary_large_image`, and a schema.org `Person`/`ProfilePage` JSON-LD graph across **all three** locales (en/sv/de — the `de` locale landed mid-run via a concurrent i18n task, `cv@c4feb8a`), plus a purpose-built 1200×630 `img/og-card.jpg` (56 KB, on-brand: Bitter uppercase name, `#fff200` accent bar, real headshot on the CV's paper aesthetic). The `Person` node reuses the site-wide `@id` `https://herremil.com/#emil` (same entity as HerrEmil.com's JSON-LD), enriched with `jobTitle`/`worksFor`/`address` from on-CV facts; `ProfilePage.mainEntity` → that Person. Head-only, non-rendered → **zero visual / CLS / perf impact**. Lighthouse scores structured-data as *manual*, so this does **not** move the numeric SEO score (stays 1.00) — the win is real share-preview cards + a canonical tag cv lacked. Brings cv to share-card parity with HerrEmil.com. |
 | 2026-07-16 | HerrEmil.com | mobile browser-chrome (`theme-color`) | **absent → present (light + dark), all 4 pages** | No page declared a `theme-color`, so mobile Chrome/Safari painted the address bar a default grey/white regardless of scheme. Added a light + dark `theme-color` pair to all four pages (en/sv/de + 404), each matched to the **exact rendered `<html>` background** per scheme (`#ffffff` light, `#14161a` dark) so the browser chrome blends seamlessly with the page top in both. 404 had **no dark-mode CSS** (rendered white even in dark mode → would clash with its new dark theme-color), so it also received the index locales' `color-scheme:light dark` + `@media(prefers-color-scheme:dark)` block (text #e8e6e3 14.5:1, link #c4664c 4.62:1 on #14161a) — the whole site is now dark-consistent. Head-only metas + additive CSS → **light mode byte-identical, zero CLS/perf impact**. Lighthouse does **not** score `theme-color` under the `no-pwa` preset (`themed-omnibox` is a PWA audit), so this doesn't move a numeric score — like dark mode / share cards, the win is real mobile-chrome polish + a now-consistent dark 404. |
 | 2026-07-16 | cv | mobile browser-chrome (`theme-color`) | **absent → present (single light `#ffffff`, all 4 locales)** | cv declared no `theme-color`, so mobile Chrome/Safari painted the address bar a default grey/white. Unlike HerrEmil.com (which got a light **+** dark pair), cv is an intentionally light-only paper/print document — **no dark mode**, no `color-scheme` opt-in → it renders white in *every* scheme — so it gets a **single unconditional** `#ffffff` (no `media` attr) that keeps the chrome matched to the white page top in both light and dark; a dark variant would be wrong here. Applied to **all four** locales (en/sv/de/fr — `fr` landed this same run via a concurrent i18n task, `cv@3edefab`, expanding scope 3 → 4). Head-only meta → zero visual/CLS/perf impact. Brings cv to mobile-chrome parity with HerrEmil.com (`7ef6f01`). Lighthouse doesn't score `theme-color` under `no-pwa` (`themed-omnibox` is a PWA audit), so no numeric move — the win is real mobile-chrome polish, verified by presence + rendered-bg match. |
+| 2026-07-16 | HerrEmil.com | HTTP caching (`Cache-Control`) | **none → tiered** (`deploy.yml c6d8130`) | The single `aws s3 sync` shipped **no `Cache-Control`** header on anything (confirmed pre-deploy: `curl -I https://herremil.com/`, `/main.css`, `/img/icon-chess.png` all returned zero cache-control — CloudFront was falling back to heuristic freshness). Split into **two disjoint passes**: assets (non-HTML) → `public,max-age=86400`; HTML → `public,max-age=0,must-revalidate`. This site has **no content-hashed assets** (names are stable — `main.css`, `img/icon-*`), so a 1-day TTL is correct, **not** `immutable` (marking stable-named files immutable would strand stale bytes); the `/*` invalidation still flushes the edge each deploy. Verified live post-deploy: HTML→`max-age=0,must-revalidate`, css+icon→`max-age=86400`, all 200 with correct Content-Type. Not a Lighthouse metric (LHCI audits local files, not live headers) — the win is real repeat-visit/edge caching, verified by `curl -I` before→after. |
+| 2026-07-16 | cv | HTTP caching (`Cache-Control`) | **none → tiered** (`deploy.yml 41c8c78`) | The single `aws s3 sync --delete` shipped **no `Cache-Control`** (confirmed pre-deploy on `cv.herremil.com` — HTML, hashed headshot, and fonts all returned zero cache-control). Split into **three disjoint passes**, each keeping `--delete` scoped to its own key-set so every file is reconciled exactly once with no cross-pass delete race: content-hashed headshots (`headshot-540.<8hex>.{avif,webp,jpg}`) → `public,max-age=31536000,immutable` (name changes on content change, so caching forever is safe, and its `--delete` purges the previous hash); unhashed assets (fonts, og-card, sitemap) → `public,max-age=86400`; HTML → `public,max-age=0,must-revalidate`. Disjoint scopes are **required** — `aws s3 sync` skips size+mtime-unchanged files, so an overlapping second pass would silently *not* apply its header. Fonts stay at 1-day (they're re-subset in place under stable names → not safe to freeze); content-hashing them (backlog #1b) is the only way to make them immutable. Verified live post-deploy: headshot→`immutable`, fonts→`max-age=86400`, HTML→`max-age=0,must-revalidate`, all 200 with correct Content-Type (image/avif, font/woff2 — proves nothing was wrongly deleted or type-clobbered). `curl -I` before→after. |
 
 Commit: `cv@532c92a`. Verified: full `lighthouse:no-pwa` autorun green
 (perf/a11y/bp/seo all 1.00, LCP 1506 ms, CLS 0, TBT 0), asset-guard PASS,
@@ -308,6 +323,16 @@ as gate failures; a future run must re-audit to confirm before implementing.
    assets + short TTL for HTML in `deploy.yml` (that's the actual win), and
    (b) hash the fonts by hand / fix the `{10}`→`{8,}` regex — never run the tool
    blindly on cv.
+   **✅ Part (a) DONE 2026-07-16** (`HerrEmil.com@c6d8130`, `cv@41c8c78`): both
+   `deploy.yml`s now ship tiered `Cache-Control` — hashed cv headshots
+   `immutable`, HTML `must-revalidate`, everything else `max-age=86400` (see
+   Fixes rows above; verified live via `curl -I`). Only marginal part **(b)**
+   remains — content-hashing the 3 cv fonts to move them from `max-age=86400`
+   to `immutable`. **Still deprioritised & out of the wind-down scope:**
+   cache-only (no Lighthouse move), returning visitors already get 1-day-cached
+   fonts, and it carries real regression risk (the `{10}`→`{8}` double-hash
+   landmine + editing all 4 locale `<head>`s + re-subset coordination). Do **not**
+   pick this up as invented work.
 2. ~~**No dark-mode support**~~ — **HerrEmil.com DONE 2026-07-14 (`89d207e`)**:
    additive `@media (prefers-color-scheme: dark)` on all 3 locales, axe-clean in
    dark, light untouched. **cv intentionally left light** — it is a print/paper
