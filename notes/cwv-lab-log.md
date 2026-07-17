@@ -11,18 +11,15 @@ each site's own `lighthouserc.json`, plus `asset-guard.sh`, `html-validate`,
 `stylelint`. Gate thresholds: perf ≥ 0.92, a11y = 1.0, best-practices ≥ 0.95,
 seo ≥ 0.95, LCP ≤ 1800 ms, CLS ≤ 0.05, TBT ≤ 180 ms, TTI ≤ 2500 ms.
 
-> **⏹ WIND-DOWN STATUS (2026-07-16).** The sanctioned wind-down backlog is now
-> **fully closed**: (1) cv `theme-color` DONE, (2) HerrEmil.com icon lazy/webp
-> RETIRED (no measurable gap), (3) FINAL substantive item — **Cache-Control
-> headers — DONE this run** (both sites, verified live). Both sites are at the
-> Lighthouse ceiling. The one remaining lever, content-hashing cv fonts
-> (backlog #1b), is cache-only, moves no metric, and is explicitly out of scope
-> — **do NOT pick it up.**
-> **➡ NEXT RUN:** run a fresh audit of both sites to confirm zero not-yet-logged
-> sub-ceiling items, then execute the spec's EXHAUSTION RULE — append a
-> `LAB EXHAUSTED <date>` entry, push it, disable `burn-perf-cwv-lab` via the
-> scheduled-tasks MCP (`enabled:false`), and post one osascript banner. A run
-> that audits, finds nothing, and self-disables is a SUCCESS.
+> **⏹ LAB EXHAUSTED (2026-07-17).** The wind-down backlog is fully closed and a
+> fresh same-day audit of both sites (see the LAB EXHAUSTED entry below) found
+> **zero not-yet-logged sub-ceiling items**. Per the spec's EXHAUSTION RULE this
+> routine has **self-disabled** (`burn-perf-cwv-lab` `enabled:false`). Both sites
+> are at the Lighthouse ceiling; the only remaining lever, content-hashing cv
+> fonts (backlog #1b), is cache-only, moves no metric, and is explicitly out of
+> scope. **Do NOT re-enable or invent work here.** History for the prior wind-down
+> steps: (1) cv `theme-color` DONE, (2) HerrEmil.com icon lazy/webp RETIRED
+> (no measurable gap), (3) Cache-Control headers DONE (both sites, verified live).
 
 ## Fixes applied
 
@@ -233,6 +230,56 @@ its only sub-1.0 audit being the deliberately-off `uses-responsive-images` (the
 exhausted hi-DPI headshot). No scored/measurable CWV or a11y gap remained on
 either site — the theme-color polish above was the biggest genuine not-yet-logged
 item.
+
+### 🏁 LAB EXHAUSTED — 2026-07-17
+
+Final run. Per the spec's EXHAUSTION RULE, ran a fresh same-day audit of **both**
+sites to confirm no un-logged sub-ceiling item remained, found none, and
+self-disabled the routine. No code change committed to either site repo this run
+(none was warranted — inventing work is explicitly forbidden). Evidence:
+
+- **LHCI autorun** (each site's own `lighthouserc.json`, 3 runs/URL, warm npx):
+  both `assert` passes **exit 0** with `assertion-results.json = []` (zero
+  failures). **HerrEmil.com** (`/`, `/sv`, `/de`): perf/a11y/seo **1.00**,
+  best-practices **0.96** (the exhausted `image-size-responsive` ceiling — assertion
+  `off`, still ≥ 0.95 gate), LCP **903–909 ms**, CLS **0**, TBT **0**, TTI ~905 ms.
+  **cv** (`/`, `/sv`, `/de`, `/fr`): perf/a11y/bp/seo **all 1.00**, LCP
+  **1291–1365 ms** (within the known ~1279 ms Lantern floor + intermittent
+  CPU-throttle spikes — see exhausted list), CLS **0**, TBT **0**, TTI ≤ 1365 ms.
+  All metrics inside gate budgets on both sites.
+- **axe-core 4.10.2** in real Chrome (Playwright, live production URLs, which
+  serve the current committed HTML — only deploy.yml has changed since the last
+  audit): **HerrEmil.com** `/` → **0 violations / 0 incomplete / 33 passes**;
+  **cv** `/` → **0 violations / 0 incomplete / 31 passes** — across
+  `wcag2a/2aa, wcag21a/aa, wcag22aa, best-practice`.
+- **Manual pass** (the items axe/LHCI don't score): both sites keep a visible
+  focus indicator (HerrEmil.com `a:focus{outline:thin dotted}`; cv scopes
+  `.lang-nav a:focus` and strips **no** `outline`, so the browser default ring
+  is intact on all content links) → WCAG 2.4.7 met; **no** skip-link on either,
+  correctly — each page is content-first with a single `<main>` landmark
+  (verified exactly **1** `<main>` on cv live), which is itself a WCAG 2.4.1
+  Bypass-Blocks technique, so a skip-link would be redundant; **no** CSS
+  animation/transition anywhere → `prefers-reduced-motion` is N/A (nothing to
+  gate); print CSS present (HerrEmil.com HTML5BP block, cv full `@page`/`@media
+  print`); `theme-color`, dark-mode (HerrEmil.com), and share metadata all
+  present and unchanged since their logged runs (CSS/DOM byte-identical — the
+  only commits since are the deploy.yml Cache-Control changes).
+- **Cache-Control (final substantive item) re-verified live** via `curl -I`:
+  HerrEmil.com HTML `max-age=0,must-revalidate`, css/png `max-age=86400`; cv HTML
+  `max-age=0,must-revalidate`, hashed headshot avif `max-age=31536000,immutable`,
+  fonts `max-age=86400` — all HTTP 200, correct Content-Type. Matches the
+  2026-07-16 deploy rows; nothing drifted.
+- **Backlog:** empty of actionable items. Only #1b (content-hash the 3 cv fonts)
+  remains — cache-only, moves no Lighthouse metric, carries real regression risk
+  (the `{10}`→`{8}` hash-tool landmine + 4-locale `<head>` edits), and is
+  explicitly out of the wind-down scope. Left untouched by design.
+
+**Conclusion:** both sites are at the Lighthouse ceiling with a clean axe + manual
+a11y surface and no un-logged CWV/a11y/SEO/best-practices gap. The lab has done
+its job. Disabled `burn-perf-cwv-lab` (scheduled-tasks MCP, `enabled:false`) and
+posted a completion banner. A run that audits, finds nothing genuine to fix, and
+self-disables is a **SUCCESS**, not a failure — future runs should not re-enable
+this or manufacture work.
 
 ## Exhausted / at-ceiling / intentionally-off — do NOT re-attempt
 
