@@ -30,3 +30,5 @@
 {"ts":"2026-07-20T09:48:07Z","name":"HTML+inlined CSS","size":2614,"limit":20000,"passed":true}
 {"ts":"2026-07-27T10:30:53Z","name":"JS","size":7634,"limit":45000,"passed":true}
 {"ts":"2026-07-27T10:30:53Z","name":"HTML+inlined CSS","size":2614,"limit":20000,"passed":true}
+{"ts":"2026-08-03T10:30:36Z","name":"JS","size":7686,"limit":45000,"passed":true}
+{"ts":"2026-08-03T10:30:36Z","name":"HTML+inlined CSS","size":2352,"limit":20000,"passed":true}
