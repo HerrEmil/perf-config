@@ -53,6 +53,7 @@ jobs:
           - { key: house-finder, url: "https://house-finder.herremil.com", repo: "HerrEmil/house-finder" }
           - { key: update-address-service, url: "https://address.herremil.com", repo: "HerrEmil/update-address-service" }
           - { key: the-beach, url: "https://beach.herremil.com", repo: "HerrEmil/the-beach" }
+          - { key: co-py, url: "https://copy.herremil.com", repo: "HerrEmil/co-py" }
     steps:
       - name: Setup Node
         uses: actions/setup-node@v4
