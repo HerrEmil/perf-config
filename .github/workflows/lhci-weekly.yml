@@ -55,6 +55,7 @@ jobs:
           - { key: the-beach, url: "https://beach.herremil.com", repo: "HerrEmil/the-beach" }
           - { key: co-py, url: "https://copy.herremil.com", repo: "HerrEmil/co-py" }
           - { key: games-friend-finder, url: "https://gamefriends.herremil.com", repo: "HerrEmil/games-friend-finder" }
+          - { key: one-line-game-reviews, url: "https://oneline.herremil.com", repo: "HerrEmil/one-line-game-reviews" }
     steps:
       - name: Setup Node
         uses: actions/setup-node@v4
