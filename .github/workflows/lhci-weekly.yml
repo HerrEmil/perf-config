@@ -59,6 +59,7 @@ jobs:
           - { key: personal-everything-app, url: "https://everything.herremil.com", repo: "HerrEmil/personal-everything-app" }
           - { key: letterboxd-for-games, url: "https://gamelog.herremil.com", repo: "HerrEmil/letterboxd-for-games" }
           - { key: co-op-collage-app, url: "https://collage.herremil.com", repo: "HerrEmil/co-op-collage-app" }
+          - { key: magnets, url: "https://magnets.herremil.com", repo: "HerrEmil/magnets" }
     steps:
       - name: Setup Node
         uses: actions/setup-node@v4
