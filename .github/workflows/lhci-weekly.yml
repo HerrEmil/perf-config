@@ -57,6 +57,7 @@ jobs:
           - { key: games-friend-finder, url: "https://gamefriends.herremil.com", repo: "HerrEmil/games-friend-finder" }
           - { key: one-line-game-reviews, url: "https://oneline.herremil.com", repo: "HerrEmil/one-line-game-reviews" }
           - { key: personal-everything-app, url: "https://everything.herremil.com", repo: "HerrEmil/personal-everything-app" }
+          - { key: letterboxd-for-games, url: "https://gamelog.herremil.com", repo: "HerrEmil/letterboxd-for-games" }
     steps:
       - name: Setup Node
         uses: actions/setup-node@v4
