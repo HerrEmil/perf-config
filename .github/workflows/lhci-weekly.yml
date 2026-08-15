@@ -51,6 +51,7 @@ jobs:
           - { key: sandpiper,         url: "https://sandpiper.herremil.com",         repo: "HerrEmil/Sandpiper" }
           - { key: chess,             url: "https://chess.herremil.com",             repo: "HerrEmil/Chess" }
           - { key: house-finder, url: "https://house-finder.herremil.com", repo: "HerrEmil/house-finder" }
+          - { key: update-address-service, url: "https://address.herremil.com", repo: "HerrEmil/update-address-service" }
     steps:
       - name: Setup Node
         uses: actions/setup-node@v4
