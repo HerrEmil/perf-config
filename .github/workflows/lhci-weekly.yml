@@ -61,6 +61,7 @@ jobs:
           - { key: co-op-collage-app, url: "https://collage.herremil.com", repo: "HerrEmil/co-op-collage-app" }
           - { key: magnets, url: "https://magnets.herremil.com", repo: "HerrEmil/magnets" }
           - { key: scrambled-blocks-game, url: "https://scrambled.herremil.com", repo: "HerrEmil/scrambled-blocks-game" }
+          - { key: swedish-public-domain-games, url: "https://kubb.herremil.com", repo: "HerrEmil/swedish-public-domain-games" }
     steps:
       - name: Setup Node
         uses: actions/setup-node@v4
