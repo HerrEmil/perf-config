@@ -66,6 +66,7 @@ Each site is a separate GitHub repo. Steps:
     Paths are relative to `site_dir`. Past `sunset`, the file fails again.
 7. Smoke-test locally: clone perf-config sibling to your site, run `bash ../perf-config/tools/asset-guard.sh dist`.
 8. Open PR — gate runs.
+9. Once the site is live, add `{ key, url, repo }` to the matrix in `.github/workflows/lhci-weekly.yml` here in perf-config so it's covered by the weekly prod audit.
 
 **Static sites without a `package.json`** (hand-written HTML/CSS, no toolchain): set `package_manager: none` in the `with:` block. Skips Node install, build, and size-limit; asset-guard / LHCI / html-validate / stylelint still run via `npx`.
 
