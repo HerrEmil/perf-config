@@ -62,6 +62,7 @@ jobs:
           - { key: magnets, url: "https://magnets.herremil.com", repo: "HerrEmil/magnets" }
           - { key: scrambled-blocks-game, url: "https://scrambled.herremil.com", repo: "HerrEmil/scrambled-blocks-game" }
           - { key: swedish-public-domain-games, url: "https://kubb.herremil.com", repo: "HerrEmil/swedish-public-domain-games" }
+          - { key: lineage, url: "https://lineage.herremil.com", repo: "HerrEmil/lineage" }
     steps:
       - name: Setup Node
         uses: actions/setup-node@v4
