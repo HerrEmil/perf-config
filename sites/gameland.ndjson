@@ -176,3 +176,19 @@
 {"ts":"2026-09-14T13:25:27Z","name":"Game: Missile Command","size":4466,"limit":4500,"passed":true}
 {"ts":"2026-09-14T13:25:27Z","name":"Game: Astro Drift","size":4483,"limit":4500,"passed":true}
 {"ts":"2026-09-14T13:25:27Z","name":"CSS","size":594,"limit":5000,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Core JS (initial boot)","size":953,"limit":1500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Shell screens JS","size":1829,"limit":2500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Game: Bear Hunt","size":3841,"limit":4500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Game: Block Breaker","size":3553,"limit":4500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Game: Cave Flyer","size":3425,"limit":4500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Game: Tower Stack","size":3572,"limit":4500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Game: Snake","size":4370,"limit":4500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Game: Road Cross","size":4475,"limit":4500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Game: Dash Run","size":4483,"limit":4500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Game: Sky Hopper","size":4445,"limit":4500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Game: 2048","size":4368,"limit":4500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Game: Star Blaster","size":4267,"limit":4500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Game: Tetra","size":4459,"limit":4500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Game: Missile Command","size":4466,"limit":4500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"Game: Astro Drift","size":4483,"limit":4500,"passed":true}
+{"ts":"2026-09-21T13:25:13Z","name":"CSS","size":594,"limit":5000,"passed":true}
