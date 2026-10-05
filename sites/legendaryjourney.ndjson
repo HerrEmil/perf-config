@@ -102,3 +102,7 @@
 {"ts":"2026-09-28T14:36:07Z","name":"CSS","size":1362,"limit":5000,"passed":true}
 {"ts":"2026-09-28T14:36:07Z","name":"Fonts","size":25696,"limit":30000,"passed":true}
 {"ts":"2026-09-28T14:36:07Z","name":"Total transfer (initial)","size":66823,"limit":200000,"passed":true}
+{"ts":"2026-10-05T15:20:42Z","name":"JS (all)","size":33251,"limit":55000,"passed":true}
+{"ts":"2026-10-05T15:20:42Z","name":"CSS","size":1362,"limit":5000,"passed":true}
+{"ts":"2026-10-05T15:20:42Z","name":"Fonts","size":25696,"limit":30000,"passed":true}
+{"ts":"2026-10-05T15:20:42Z","name":"Total transfer (initial)","size":66823,"limit":200000,"passed":true}
