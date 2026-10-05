@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>size-limit dashboard — herremil sites</title>
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; max-width: 920px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.1rem; margin-top: 2rem; border-bottom: 1px solid #ddd; padding-bottom: 0.25rem; }
+  p.subtitle { color: #666; margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+  th, td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; vertical-align: middle; }
+  th { text-align: left; color: #666; font-weight: normal; font-size: 0.85rem; }
+  td:first-child { font-family: ui-monospace, monospace; }
+  svg { display: block; }
+  footer { margin-top: 3rem; color: #999; font-size: 0.85rem; }
+  footer a { color: #06a; }
+</style>
+</head>
+<body>
+<h1>size-limit dashboard</h1>
+<p class="subtitle">JS/CSS bundle size history per herremil site. Sparkline = bundle size over time; dashed red line = limit.</p>
+
+    <section>
+      <h2>chess</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>metric</th><th>history</th><th>latest</th><th>limit</th><th>status</th><th>runs</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>HTML+inlined CSS</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,35.6 L8.0,35.5 L16.0,35.5 L24.0,35.5 L32.0,35.5 L40.0,35.5 L48.0,35.5 L56.0,35.5 L64.0,35.5 L72.0,35.5 L80.0,35.5 L88.0,35.5 L96.0,35.5 L104.0,35.5 L112.0,35.0 L120.0,35.0 L128.0,35.5 L136.0,35.5 L144.0,35.5 L152.0,35.5 L160.0,35.5 L168.0,35.5 L176.0,35.5 L184.0,35.5 L192.0,35.5 L200.0,35.5" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="35.5" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">2.3 KB</td>
+          <td style="text-align:right; color:#666">19.5 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">26</td>
+        </tr>
+        <tr>
+          <td>JS</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,34.5 L8.0,34.5 L16.0,34.5 L24.0,34.5 L32.0,34.5 L40.0,34.5 L48.0,34.5 L56.0,34.5 L64.0,34.5 L72.0,34.5 L80.0,34.5 L88.0,34.5 L96.0,34.5 L104.0,34.2 L112.0,33.5 L120.0,33.5 L128.0,33.5 L136.0,33.5 L144.0,33.5 L152.0,33.5 L160.0,33.5 L168.0,33.5 L176.0,33.5 L184.0,33.5 L192.0,33.5 L200.0,33.5" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="33.5" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">7.5 KB</td>
+          <td style="text-align:right; color:#666">43.9 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">26</td>
+        </tr></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>gameland</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>metric</th><th>history</th><th>latest</th><th>limit</th><th>status</th><th>runs</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>Core JS (initial boot)</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,15.8 L16.7,15.8 L33.3,15.8 L50.0,15.8 L66.7,15.8 L83.3,15.8 L100.0,15.8 L116.7,15.8 L133.3,15.8 L150.0,15.8 L166.7,15.8 L183.3,15.8 L200.0,15.8" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="15.8" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">0.9 KB</td>
+          <td style="text-align:right; color:#666">1.5 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">13</td>
+        </tr>
+        <tr>
+          <td>CSS</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,35.8 L7.7,35.8 L15.4,35.8 L23.1,35.8 L30.8,35.8 L38.5,35.8 L46.2,35.8 L53.8,35.8 L61.5,35.8 L69.2,35.8 L76.9,35.8 L84.6,35.8 L92.3,35.8 L100.0,35.5 L107.7,35.5 L115.4,35.5 L123.1,35.5 L130.8,35.5 L138.5,35.5 L146.2,35.5 L153.8,35.5 L161.5,35.5 L169.2,35.5 L176.9,35.5 L184.6,35.5 L192.3,35.5 L200.0,35.5" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="35.5" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">0.6 KB</td>
+          <td style="text-align:right; color:#666">4.9 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">27</td>
+        </tr>
+        <tr>
+          <td>Game: 2048</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,3.0 L18.2,3.0 L36.4,3.0 L54.5,3.0 L72.7,3.0 L90.9,3.0 L109.1,3.0 L127.3,3.0 L145.5,3.0 L163.6,3.0 L181.8,3.0 L200.0,3.0" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="3.0" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">4.3 KB</td>
+          <td style="text-align:right; color:#666">4.4 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">12</td>
+        </tr>
+        <tr>
+          <td>Game: Astro Drift</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,2.0 L18.2,2.0 L36.4,2.0 L54.5,2.0 L72.7,2.0 L90.9,2.0 L109.1,2.0 L127.3,2.0 L145.5,2.0 L163.6,2.0 L181.8,2.0 L200.0,2.0" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="2.0" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">4.4 KB</td>
+          <td style="text-align:right; color:#666">4.4 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">12</td>
+        </tr>
+        <tr>
+          <td>Game: Bear Hunt</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,7.5 L16.7,7.5 L33.3,7.5 L50.0,7.5 L66.7,7.5 L83.3,7.5 L100.0,7.5 L116.7,7.5 L133.3,7.5 L150.0,7.5 L166.7,7.5 L183.3,7.5 L200.0,7.5" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="7.5" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">3.8 KB</td>
+          <td style="text-align:right; color:#666">4.4 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">13</td>
+        </tr>
+        <tr>
+          <td>Game: Block Breaker</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,10.7 L16.7,9.1 L33.3,9.1 L50.0,9.5 L66.7,10.0 L83.3,9.9 L100.0,9.9 L116.7,9.9 L133.3,9.9 L150.0,9.9 L166.7,9.9 L183.3,9.9 L200.0,9.9" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="9.9" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">3.5 KB</td>
+          <td style="text-align:right; color:#666">4.4 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">13</td>
+        </tr>
+        <tr>
+          <td>Game: Cave Flyer</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,11.0 L16.7,11.0 L33.3,11.0 L50.0,11.0 L66.7,11.0 L83.3,11.0 L100.0,11.0 L116.7,11.0 L133.3,11.0 L150.0,11.0 L166.7,11.0 L183.3,11.0 L200.0,11.0" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="11.0" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">3.3 KB</td>
+          <td style="text-align:right; color:#666">4.4 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">13</td>
+        </tr>
+        <tr>
+          <td>Game: Dash Run</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,2.0 L18.2,2.0 L36.4,2.0 L54.5,2.0 L72.7,2.0 L90.9,2.0 L109.1,2.0 L127.3,2.0 L145.5,2.0 L163.6,2.0 L181.8,2.0 L200.0,2.0" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="2.0" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">4.4 KB</td>
+          <td style="text-align:right; color:#666">4.4 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">12</td>
+        </tr>
+        <tr>
+          <td>Game: Missile Command</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,2.2 L18.2,2.2 L36.4,2.2 L54.5,2.2 L72.7,2.2 L90.9,2.2 L109.1,2.2 L127.3,2.2 L145.5,2.2 L163.6,2.2 L181.8,2.2 L200.0,2.2" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="2.2" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">4.4 KB</td>
+          <td style="text-align:right; color:#666">4.4 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">12</td>
+        </tr>
+        <tr>
+          <td>Game: Road Cross</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,2.1 L18.2,2.1 L36.4,2.1 L54.5,2.1 L72.7,2.1 L90.9,2.1 L109.1,2.1 L127.3,2.1 L145.5,2.1 L163.6,2.1 L181.8,2.1 L200.0,2.1" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="2.1" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">4.4 KB</td>
+          <td style="text-align:right; color:#666">4.4 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">12</td>
+        </tr>
+        <tr>
+          <td>Game: Sky Hopper</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,2.4 L18.2,2.4 L36.4,2.4 L54.5,2.4 L72.7,2.4 L90.9,2.4 L109.1,2.4 L127.3,2.4 L145.5,2.4 L163.6,2.4 L181.8,2.4 L200.0,2.4" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="2.4" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">4.3 KB</td>
+          <td style="text-align:right; color:#666">4.4 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">12</td>
+        </tr>
+        <tr>
+          <td>Game: Snake</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,3.0 L18.2,3.0 L36.4,3.0 L54.5,3.0 L72.7,3.0 L90.9,3.0 L109.1,3.0 L127.3,3.0 L145.5,3.0 L163.6,3.0 L181.8,3.0 L200.0,3.0" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="3.0" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">4.3 KB</td>
+          <td style="text-align:right; color:#666">4.4 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">12</td>
+        </tr>
+        <tr>
+          <td>Game: Star Blaster</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,3.9 L18.2,3.9 L36.4,3.9 L54.5,3.9 L72.7,3.9 L90.9,3.9 L109.1,3.9 L127.3,3.9 L145.5,3.9 L163.6,3.9 L181.8,3.9 L200.0,3.9" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="3.9" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">4.2 KB</td>
+          <td style="text-align:right; color:#666">4.4 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">12</td>
+        </tr>
+        <tr>
+          <td>Game: Tetra</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,2.3 L18.2,2.3 L36.4,2.3 L54.5,2.3 L72.7,2.3 L90.9,2.3 L109.1,2.3 L127.3,2.3 L145.5,2.3 L163.6,2.3 L181.8,2.3 L200.0,2.3" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="2.3" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">4.4 KB</td>
+          <td style="text-align:right; color:#666">4.4 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">12</td>
+        </tr>
+        <tr>
+          <td>Game: Tower Stack</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,9.8 L18.2,9.8 L36.4,9.8 L54.5,9.8 L72.7,9.8 L90.9,9.8 L109.1,9.8 L127.3,9.8 L145.5,9.8 L163.6,9.8 L181.8,9.8 L200.0,9.8" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="9.8" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">3.5 KB</td>
+          <td style="text-align:right; color:#666">4.4 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">12</td>
+        </tr>
+        <tr>
+          <td>JS</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,34.7 L15.4,34.7 L30.8,34.7 L46.2,34.7 L61.5,34.7 L76.9,34.7 L92.3,34.7 L107.7,34.7 L123.1,34.7 L138.5,34.7 L153.8,34.7 L169.2,34.7 L184.6,34.7 L200.0,34.9" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="34.9" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">1.3 KB</td>
+          <td style="text-align:right; color:#666">9.8 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">14</td>
+        </tr>
+        <tr>
+          <td>Shell screens JS</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,13.8 L16.7,12.1 L33.3,12.1 L50.0,12.1 L66.7,12.1 L83.3,12.1 L100.0,12.1 L116.7,12.1 L133.3,12.1 L150.0,12.1 L166.7,12.1 L183.3,12.1 L200.0,12.1" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="12.1" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">1.8 KB</td>
+          <td style="text-align:right; color:#666">2.4 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">13</td>
+        </tr></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>legendaryjourney</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>metric</th><th>history</th><th>latest</th><th>limit</th><th>status</th><th>runs</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>CSS</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,30.9 L7.7,30.9 L15.4,30.8 L23.1,30.8 L30.8,30.8 L38.5,30.8 L46.2,30.8 L53.8,30.8 L61.5,30.8 L69.2,30.8 L76.9,30.8 L84.6,30.8 L92.3,30.8 L100.0,30.8 L107.7,30.6 L115.4,29.6 L123.1,29.6 L130.8,29.6 L138.5,29.6 L146.2,29.6 L153.8,29.6 L161.5,29.6 L169.2,29.6 L176.9,29.6 L184.6,29.6 L192.3,29.6 L200.0,29.6" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="29.6" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">1.3 KB</td>
+          <td style="text-align:right; color:#666">4.9 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">27</td>
+        </tr>
+        <tr>
+          <td>Fonts</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,7.4 L7.7,7.4 L15.4,7.4 L23.1,7.4 L30.8,7.4 L38.5,7.4 L46.2,7.4 L53.8,7.4 L61.5,7.4 L69.2,7.4 L76.9,7.4 L84.6,7.4 L92.3,7.4 L100.0,7.4 L107.7,7.4 L115.4,7.4 L123.1,7.4 L130.8,7.4 L138.5,7.4 L146.2,7.4 L153.8,7.4 L161.5,7.4 L169.2,7.4 L176.9,7.4 L184.6,7.4 L192.3,7.4 L200.0,7.4" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="7.4" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">25.1 KB</td>
+          <td style="text-align:right; color:#666">29.3 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">27</td>
+        </tr>
+        <tr>
+          <td>JS (all)</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,30.8 L7.7,30.8 L15.4,30.8 L23.1,30.8 L30.8,30.8 L38.5,30.8 L46.2,30.8 L53.8,30.8 L61.5,30.8 L69.2,30.8 L76.9,30.8 L84.6,30.8 L92.3,30.8 L100.0,30.8 L107.7,30.1 L115.4,17.0 L123.1,17.0 L130.8,17.0 L138.5,17.0 L146.2,17.0 L153.8,17.0 L161.5,17.0 L169.2,17.0 L176.9,17.0 L184.6,17.0 L192.3,17.0 L200.0,17.0" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="17.0" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">32.5 KB</td>
+          <td style="text-align:right; color:#666">53.7 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">27</td>
+        </tr>
+        <tr>
+          <td>Total transfer (initial)</td>
+          <td>
+    <svg viewBox="0 0 200 40" width="200" height="40" role="img" aria-label="size history sparkline">
+      <line x1="0" y1="1.9" x2="200" y2="1.9" stroke="#c00" stroke-dasharray="3,3" stroke-width="1"/>
+      <path d="M0.0,31.1 L7.7,31.1 L15.4,31.1 L23.1,31.1 L30.8,31.1 L38.5,31.1 L46.2,31.1 L53.8,31.1 L61.5,31.1 L69.2,31.1 L76.9,31.1 L84.6,31.1 L92.3,31.1 L100.0,31.1 L107.7,30.9 L115.4,27.3 L123.1,27.3 L130.8,27.3 L138.5,27.3 L146.2,27.3 L153.8,27.3 L161.5,27.3 L169.2,27.3 L176.9,27.3 L184.6,27.3 L192.3,27.3 L200.0,27.3" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="200.0" cy="27.3" r="2.5" fill="#0a0"/>
+    </svg></td>
+          <td style="text-align:right">65.3 KB</td>
+          <td style="text-align:right; color:#666">195.3 KB</td>
+          <td style="text-align:right; color:#0a0; font-weight:bold">ok</td>
+          <td style="text-align:right; color:#666">27</td>
+        </tr></tbody>
+      </table>
+    </section>
+<footer>
+  Generated 2026-10-05T15:20:43.603Z by
+  <a href="https://github.com/HerrEmil/perf-config/blob/main/.github/workflows/size-limit-dashboard.yml">size-limit-dashboard.yml</a>
+  in <code>HerrEmil/perf-config</code>.
+</footer>
+</body>
+</html>
