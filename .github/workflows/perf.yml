@@ -145,12 +145,19 @@ jobs:
       # HTML lint. Per-site config wins (`.htmlvalidate.json` / `html-validate.config.*`
       # at repo root); otherwise the shared `.perf-config/html-validate.config.json` is used.
       # Errors fail the build — sites can extend the shared config to soften specific rules.
+      # Pinned and installed outside the project: unpinned `npx html-validate` crashed npm 10
+      # ("reading 'edgesOut'") on Node 20, and 11.x requires Node >= 22.
       - name: HTML perf-lint
+        env:
+          HTML_VALIDATE_VERSION: "9.7.1"
         run: |
+          mkdir -p /tmp/html-validate-runner
+          (cd /tmp/html-validate-runner && npm init -y >/dev/null 2>&1 && npm install --no-save --no-audit --no-fund "html-validate@${HTML_VALIDATE_VERSION}")
+          HTML_VALIDATE=/tmp/html-validate-runner/node_modules/.bin/html-validate
           if ls .htmlvalidate.json html-validate.config.json html-validate.config.js html-validate.config.cjs html-validate.config.mjs 2>/dev/null | grep -q .; then
-            npx --yes html-validate "${{ inputs.site_dir }}/**/*.html"
+            "$HTML_VALIDATE" "${{ inputs.site_dir }}/**/*.html"
           else
-            npx --yes html-validate --config=.perf-config/html-validate.config.json "${{ inputs.site_dir }}/**/*.html"
+            "$HTML_VALIDATE" --config=.perf-config/html-validate.config.json "${{ inputs.site_dir }}/**/*.html"
           fi
 
       # CSS lint. Per-site config wins (`.stylelintrc*` / `stylelint.config.*`);
