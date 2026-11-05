@@ -51,7 +51,7 @@ jobs:
           - { key: sandpiper,         url: "https://sandpiper.herremil.com",         repo: "HerrEmil/Sandpiper" }
           - { key: chess,             url: "https://chess.herremil.com",             repo: "HerrEmil/Chess" }
           - { key: house-finder, url: "https://house-finder.herremil.com", repo: "HerrEmil/house-finder" }
-          - { key: the-beach, url: "https://beach.herremil.com", repo: "HerrEmil/the-beach" }
+          - { key: the-beach, url: "https://dopp.nu", repo: "HerrEmil/the-beach" }
           - { key: one-line-game-reviews, url: "https://oneline.herremil.com", repo: "HerrEmil/one-line-game-reviews" }
           - { key: personal-everything-app, url: "https://everything.herremil.com", repo: "HerrEmil/personal-everything-app" }
           - { key: letterboxd-for-games, url: "https://gamelog.herremil.com", repo: "HerrEmil/letterboxd-for-games" }
