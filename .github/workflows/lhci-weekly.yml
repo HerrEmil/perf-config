@@ -60,6 +60,7 @@ jobs:
           - { key: scrambled-blocks-game, url: "https://scrambled.herremil.com", repo: "HerrEmil/scrambled-blocks-game" }
           - { key: swedish-public-domain-games, url: "https://kubb.herremil.com", repo: "HerrEmil/swedish-public-domain-games" }
           - { key: lineage, url: "https://lineage.herremil.com", repo: "HerrEmil/lineage" }
+          - { key: family-tree, url: "https://family-tree.herremil.com", repo: "HerrEmil/family-tree" }
     steps:
       - name: Setup Node
         uses: actions/setup-node@v4
