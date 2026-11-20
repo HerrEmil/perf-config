@@ -62,6 +62,7 @@ jobs:
           - { key: lineage, url: "https://lineage.herremil.com", repo: "HerrEmil/lineage" }
           - { key: family-tree, url: "https://family-tree.herremil.com", repo: "HerrEmil/family-tree" }
           - { key: car, url: "https://car.herremil.com", repo: "HerrEmil/car" }
+          - { key: bolaget-wrapped, url: "https://bolaget-wrapped.herremil.com", repo: "HerrEmil/bolaget-wrapped" }
     steps:
       - name: Setup Node
         uses: actions/setup-node@v4
