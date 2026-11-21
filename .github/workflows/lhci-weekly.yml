@@ -54,7 +54,7 @@ jobs:
           - { key: the-beach, url: "https://dopp.nu", repo: "HerrEmil/the-beach" }
           - { key: one-line-game-reviews, url: "https://oneline.herremil.com", repo: "HerrEmil/one-line-game-reviews" }
           - { key: personal-everything-app, url: "https://everything.herremil.com", repo: "HerrEmil/personal-everything-app" }
-          - { key: letterboxd-for-games, url: "https://gamelog.herremil.com", repo: "HerrEmil/letterboxd-for-games" }
+          - { key: one-game-later, url: "https://onegamelater.com", repo: "HerrEmil/one-game-later" }
           - { key: co-op-collage-app, url: "https://collage.herremil.com", repo: "HerrEmil/co-op-collage-app" }
           - { key: magnets, url: "https://magnets.herremil.com", repo: "HerrEmil/magnets" }
           - { key: scrambled-blocks-game, url: "https://scrambled.herremil.com", repo: "HerrEmil/scrambled-blocks-game" }
